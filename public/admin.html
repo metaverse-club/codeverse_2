@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | CodeVerse 2.0</title>
+  <meta name="description" content="Organizer verification portal for CodeVerse 2.0. Review registrations, verify UTR payments, view receipts, and export rosters.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+  <!-- CRT Matrix Scanline Overlay -->
+  <div class="cyber-scanline" aria-hidden="true"></div>
+
+  <!-- Ambient background glow elements -->
+  <div class="glow-orb orb-1" aria-hidden="true"></div>
+  <div class="glow-orb orb-2" aria-hidden="true"></div>
+
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="admin.html" class="nav-brand">
+        <div class="brand-symbol">CV</div>
+        <div class="brand-text">
+          <span class="brand-title">CodeVerse <span class="brand-gradient">Admin</span></span>
+          <span class="brand-badge admin-badge">Organizer Console</span>
+        </div>
+      </a>
+
+      <div class="nav-links">
+        <a href="index.html" class="nav-link" id="link-student-portal" title="Return to student portal & log out">
+          ← Student Portal
+        </a>
+        <div id="nav-auth-controls" class="hidden auth-nav-group">
+          <span class="user-greeting-badge">
+            <span class="online-indicator"></span>
+            <span id="nav-user-display">Metaversity_Admin</span>
+          </span>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-export-excel" title="Download Master Excel Workbook">
+            📥 Export Excel (.xlsx)
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-admin-logout" title="Sign out of admin session & return to landing page">
+            🔒 Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= AUTHENTICATION / LOGIN SCREEN ================= -->
+  <section id="admin-login-screen" class="login-wrapper">
+    <div class="card login-card">
+      <div class="login-header">
+        <div class="login-shield-icon">🛡️</div>
+        <h1 class="login-title">Admin Authentication</h1>
+        <p class="login-subtitle">Restricted Access • CodeVerse 2.0 Organizing Committee</p>
+      </div>
+
+      <div id="login-error-alert" class="login-alert hidden">
+        ❌ Invalid admin credentials. Access denied.
+      </div>
+
+      <form id="admin-login-form" novalidate>
+        <div class="form-group mb-3">
+          <label for="admin-login-user" class="form-label">
+            Admin Username <span class="required">*</span>
+          </label>
+          <input type="text" id="admin-login-user" class="form-input" placeholder="Enter admin username" required autocomplete="username">
+        </div>
+
+        <div class="form-group mb-4">
+          <label for="admin-login-pass" class="form-label">
+            Admin Password <span class="required">*</span>
+          </label>
+          <div class="password-input-wrapper">
+            <input type="password" id="admin-login-pass" class="form-input" placeholder="Enter admin password" required autocomplete="current-password">
+            <button type="button" class="btn-toggle-pass" id="btn-toggle-pass" title="Show/Hide Password">👁️</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="btn-submit-login">
+          Sign In to Admin Console <span class="btn-arrow">→</span>
+        </button>
+      </form>
+
+      <div class="login-footer">
+        <span>🔒 Protected by 256-Bit Cryptographic Session Tokens</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MAIN ADMIN DASHBOARD (PROTECTED) ================= -->
+  <main id="admin-dashboard-screen" class="container admin-container hidden">
+    <!-- Admin Header -->
+    <div class="admin-header-row">
+      <div>
+        <h1 class="admin-page-title">Team Verification & Payment Audit</h1>
+        <p class="admin-page-sub">
+          Review incoming teams who have <strong>fully submitted</strong> details, transaction UTR, and uploaded payment receipts.
+        </p>
+      </div>
+      <div class="admin-actions-top">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-refresh-data">
+          🔄 Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Metric Cards -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-card-icon bg-indigo">👥</div>
+        <div class="metric-card-data">
+          <span class="metric-card-label">Fully Submitted</span>
+          <span class="metric-card-num" id="stat-total-teams">0</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-card-icon bg-amber">⏳</div>
+        <div class="metric-card-data">
+          <span class="metric-card-label">Pending Verification</span>
+          <span class="metric-card-num text-amber" id="stat-pending-verification">0</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-card-icon bg-emerald">✅</div>
+        <div class="metric-card-data">
+          <span class="metric-card-label">Verified Teams</span>
+          <span class="metric-card-num text-emerald" id="stat-verified-teams">0</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-card-icon bg-rose">❌</div>
+        <div class="metric-card-data">
+          <span class="metric-card-label">Rejected</span>
+          <span class="metric-card-num text-rose" id="stat-rejected-teams">0</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-card-icon bg-cyan">💰</div>
+        <div class="metric-card-data">
+          <span class="metric-card-label">Verified Revenue</span>
+          <span class="metric-card-num text-cyan" id="stat-total-revenue">₹0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Registration Deadline Settings Card -->
+    <div class="card admin-settings-card">
+      <div class="settings-card-header">
+        <div class="settings-title-group">
+          <span class="settings-icon">⏳</span>
+          <div>
+            <h3 class="settings-title">Student Registration Deadline</h3>
+            <p class="settings-sub">Set the deadline until which students can submit new registrations.</p>
+          </div>
+        </div>
+        <div id="reg-deadline-status-pill" class="badge-deadline open">
+          <span class="status-indicator-dot pulse"></span>
+          <span id="reg-deadline-status-text">Registrations: Open</span>
+        </div>
+      </div>
+
+      <div class="settings-form-row">
+        <div class="deadline-input-wrap">
+          <label for="admin-reg-deadline-input" class="form-label">Set Registration Deadline (Date & Time):</label>
+          <input type="datetime-local" id="admin-reg-deadline-input" class="form-input deadline-datetime-input">
+        </div>
+        <div class="settings-btn-group">
+          <button type="button" class="btn btn-primary" id="btn-save-reg-deadline">
+            💾 Save Deadline
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-clear-reg-deadline" title="Allow registrations indefinitely">
+            🔓 Open Indefinitely
+          </button>
+        </div>
+      </div>
+      <div class="deadline-active-info">
+        Current Setting: <strong id="current-reg-deadline-display">No deadline set (Registrations are open)</strong>
+      </div>
+    </div>
+
+    <!-- Edit Window & Deadline Settings Card -->
+    <div class="card admin-settings-card" style="margin-top: 1.5rem;">
+      <div class="settings-card-header">
+        <div class="settings-title-group">
+          <span class="settings-icon">⏰</span>
+          <div>
+            <h3 class="settings-title">Team Edit Deadline</h3>
+            <p class="settings-sub">Set the deadline until which students can update team name, topics, leader, and member details.</p>
+          </div>
+        </div>
+        <div id="deadline-status-pill" class="badge-deadline open">
+          <span class="status-indicator-dot pulse"></span>
+          <span id="deadline-status-text">Edit Window: Open</span>
+        </div>
+      </div>
+
+      <div class="settings-form-row">
+        <div class="deadline-input-wrap">
+          <label for="admin-deadline-input" class="form-label">Set Edit Deadline (Date & Time):</label>
+          <input type="datetime-local" id="admin-deadline-input" class="form-input deadline-datetime-input">
+        </div>
+        <div class="settings-btn-group">
+          <button type="button" class="btn btn-primary" id="btn-save-deadline">
+            💾 Save Deadline
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-clear-deadline" title="Allow edits indefinitely">
+            🔓 Open Indefinitely
+          </button>
+        </div>
+      </div>
+      <div class="deadline-active-info">
+        Current Setting: <strong id="current-deadline-display">No deadline set (Edits are open)</strong>
+      </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="admin-toolbar card">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="admin-search-input" class="search-input" placeholder="Search by Team Name, Reg ID, UTR, or Leader...">
+      </div>
+
+      <div class="filter-group">
+        <label for="admin-filter-status" class="filter-label">Verification Status:</label>
+        <select id="admin-filter-status" class="filter-select">
+          <option value="ALL">All Fully Submitted</option>
+          <option value="PENDING_VERIFICATION" selected>Pending Verification Only</option>
+          <option value="VERIFIED">Verified Only</option>
+          <option value="REJECTED">Rejected Only</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Teams Table -->
+    <div class="card table-card">
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Reg ID</th>
+              <th>Team & Track</th>
+              <th>Team Leader</th>
+              <th>Members</th>
+              <th>Payment & UTR</th>
+              <th>Proof Screenshot</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-table-body">
+            <!-- Dynamically populated -->
+            <tr>
+              <td colspan="8" class="text-center py-5">Loading registrations...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= DETAIL & VERIFICATION MODAL ================= -->
+  <div class="modal-overlay hidden" id="team-detail-modal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <button type="button" class="btn btn-secondary btn-sm btn-modal-back" id="btn-modal-header-back" title="Go back to registrations table">
+            ← Back
+          </button>
+          <div>
+            <h3 class="modal-title" id="modal-team-title">Team Name</h3>
+            <span class="modal-subtitle monospace" id="modal-team-reg-id">CV26-TM-XXXXX</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close" id="modal-detail-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Team & Track Banner -->
+        <div class="modal-info-row">
+          <div class="modal-info-pill">
+            <span class="info-label">Track:</span>
+            <strong id="modal-track-val">-</strong>
+          </div>
+          <div class="modal-info-pill">
+            <span class="info-label">Project:</span>
+            <span id="modal-project-val">-</span>
+          </div>
+          <div class="modal-info-pill">
+            <span class="info-label">Submitted:</span>
+            <span id="modal-created-val">-</span>
+          </div>
+        </div>
+
+        <!-- Roster Section (All 4 Members Dedicated Space) -->
+        <div class="modal-section">
+          <h4 class="modal-section-title">Team Members Details (Leader + Members)</h4>
+          <div class="table-responsive">
+            <table class="roster-table mini">
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Full Name</th>
+                  <th>Reg. / Roll Number</th>
+                  <th>College Email</th>
+                  <th>Phone Number</th>
+                </tr>
+              </thead>
+              <tbody id="modal-roster-tbody">
+                <!-- Roster rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Payment Verification Box -->
+        <div class="modal-section payment-review-section">
+          <h4 class="modal-section-title">Payment Transaction & Screenshot Proof</h4>
+          <div class="payment-audit-grid">
+            <div class="audit-details">
+              <div class="audit-row">
+                <span class="audit-key">Payment Method:</span>
+                <strong id="modal-pay-method">UPI</strong>
+              </div>
+              <div class="audit-row">
+                <span class="audit-key">Transaction ID / UTR:</span>
+                <span class="audit-val monospace font-bold" id="modal-pay-utr">-</span>
+              </div>
+              <div class="audit-row">
+                <span class="audit-key">Amount Paid:</span>
+                <strong class="text-emerald" id="modal-pay-amount">₹400</strong>
+              </div>
+              <div class="audit-row">
+                <span class="audit-key">Transaction Date:</span>
+                <span id="modal-pay-date">-</span>
+              </div>
+              <div class="audit-row">
+                <span class="audit-key">Proof Uploaded:</span>
+                <span id="modal-pay-submitted">-</span>
+              </div>
+              <div class="audit-row">
+                <span class="audit-key">Existing Remarks:</span>
+                <span id="modal-pay-notes" class="text-muted">None</span>
+              </div>
+            </div>
+
+            <!-- Proof Image Preview -->
+            <div class="audit-proof-box">
+              <span class="audit-key">Screenshot Proof:</span>
+              <div id="modal-proof-container" class="proof-container">
+                <!-- Image or placeholder -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Verification Action Form -->
+        <div class="modal-section action-section">
+          <h4 class="modal-section-title">Organizer Verification Decision</h4>
+          <div class="verification-controls">
+            <div class="form-group mb-3">
+              <label for="admin-action-notes" class="form-label">Organizer Notes / Rejection Reason (optional):</label>
+              <input type="text" id="admin-action-notes" class="form-input" placeholder="e.g. UTR cross-verified in bank statement">
+            </div>
+
+            <div class="action-buttons-row">
+              <button type="button" class="btn btn-success font-bold" id="btn-action-verify">
+                ✅ Accept & Verify Team
+              </button>
+              <button type="button" class="btn btn-danger font-bold" id="btn-action-reject">
+                ❌ Reject Payment
+              </button>
+              <button type="button" class="btn btn-warning" id="btn-action-pending">
+                ⏳ Revert to Pending
+              </button>
+              <button type="button" class="btn btn-primary" id="btn-action-open-edit">
+                ✏️ Edit Team Data
+              </button>
+              <button type="button" class="btn btn-danger-soft" id="btn-action-delete-team" title="Permanently delete this team registration">
+                🗑️ Delete Team
+              </button>
+              <button type="button" class="btn btn-secondary" id="btn-modal-back">
+                ← Back to Table
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= ADMIN FULL DATA EDIT MODAL ================= -->
+  <div class="modal-overlay hidden" id="admin-edit-modal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-admin-edit-cancel">← Cancel</button>
+          <div>
+            <h3 class="modal-title">✏️ Admin Edit: <span id="edit-modal-team-title">Team Name</span></h3>
+            <span class="modal-subtitle monospace" id="edit-modal-reg-id">CV26-TM-XXXXX</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close" id="btn-admin-edit-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="admin-edit-form" class="modal-body">
+        <!-- Team & Track Settings -->
+        <div class="modal-section">
+          <h4 class="modal-section-title">1. Team & Track Details</h4>
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label class="form-label" for="edit-team-name">Team Name:</label>
+              <input type="text" id="edit-team-name" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="edit-team-track">Innovation Sector / Track:</label>
+              <select id="edit-team-track" class="form-input form-select" required>
+                <option value="AI & Intelligent Systems">AI & Intelligent Systems</option>
+                <option value="Web3, DeFi & Cryptography">Web3, DeFi & Cryptography</option>
+                <option value="Cybersecurity & Cloud Resilience">Cybersecurity & Cloud Resilience</option>
+                <option value="HealthTech & BioInformatics">HealthTech & BioInformatics</option>
+                <option value="FinTech & Algorithmic Systems">FinTech & Algorithmic Systems</option>
+                <option value="Open Innovation / Moonshots">Open Innovation / Moonshots</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="edit-team-status">Verification Status:</label>
+              <select id="edit-team-status" class="form-input form-select" required>
+                <option value="VERIFIED">VERIFIED</option>
+                <option value="PENDING_VERIFICATION">PENDING_VERIFICATION</option>
+                <option value="REJECTED">REJECTED</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group mt-3">
+            <label class="form-label" for="edit-project-title">Project Title (Optional):</label>
+            <input type="text" id="edit-project-title" class="form-input" placeholder="e.g. Autonomous Reasoning Agent">
+          </div>
+        </div>
+
+        <!-- 4 Members Details -->
+        <div class="modal-section">
+          <h4 class="modal-section-title">2. Squad Members (Leader + 3 Members)</h4>
+
+          <!-- Leader -->
+          <div class="member-edit-card leader-card">
+            <div class="member-edit-header">
+              <span class="member-role-badge leader-badge">👑 Team Leader (Member 1)</span>
+            </div>
+            <div class="form-grid-4">
+              <div class="form-group">
+                <label class="form-label">Full Name:</label>
+                <input type="text" id="edit-m1-name" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Reg. / Roll Number:</label>
+                <input type="text" id="edit-m1-reg" class="form-input monospace" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">College Email:</label>
+                <input type="email" id="edit-m1-email" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone Number:</label>
+                <input type="tel" id="edit-m1-phone" class="form-input monospace" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Member 2 -->
+          <div class="member-edit-card">
+            <div class="member-edit-header">
+              <span class="member-role-badge">👥 Member 2</span>
+            </div>
+            <div class="form-grid-4">
+              <div class="form-group">
+                <label class="form-label">Full Name:</label>
+                <input type="text" id="edit-m2-name" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Reg. / Roll Number:</label>
+                <input type="text" id="edit-m2-reg" class="form-input monospace" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">College Email:</label>
+                <input type="email" id="edit-m2-email" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone Number:</label>
+                <input type="tel" id="edit-m2-phone" class="form-input monospace" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Member 3 -->
+          <div class="member-edit-card">
+            <div class="member-edit-header">
+              <span class="member-role-badge">👥 Member 3</span>
+            </div>
+            <div class="form-grid-4">
+              <div class="form-group">
+                <label class="form-label">Full Name:</label>
+                <input type="text" id="edit-m3-name" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Reg. / Roll Number:</label>
+                <input type="text" id="edit-m3-reg" class="form-input monospace" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">College Email:</label>
+                <input type="email" id="edit-m3-email" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone Number:</label>
+                <input type="tel" id="edit-m3-phone" class="form-input monospace" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Member 4 -->
+          <div class="member-edit-card">
+            <div class="member-edit-header">
+              <span class="member-role-badge">👥 Member 4</span>
+            </div>
+            <div class="form-grid-4">
+              <div class="form-group">
+                <label class="form-label">Full Name:</label>
+                <input type="text" id="edit-m4-name" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Reg. / Roll Number:</label>
+                <input type="text" id="edit-m4-reg" class="form-input monospace" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">College Email:</label>
+                <input type="email" id="edit-m4-email" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone Number:</label>
+                <input type="tel" id="edit-m4-phone" class="form-input monospace" required>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Details -->
+        <div class="modal-section">
+          <h4 class="modal-section-title">3. Payment Details</h4>
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label class="form-label" for="edit-pay-utr">Transaction ID / UTR:</label>
+              <input type="text" id="edit-pay-utr" class="form-input monospace font-bold" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="edit-pay-amount">Amount Paid (₹):</label>
+              <input type="number" id="edit-pay-amount" class="form-input" value="400" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="edit-pay-method">Payment Method:</label>
+              <select id="edit-pay-method" class="form-input form-select">
+                <option value="UPI">UPI</option>
+                <option value="Bank Transfer">Bank Transfer (NEFT/IMPS)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group mt-3">
+            <label class="form-label" for="edit-pay-notes">Admin Notes / Remarks:</label>
+            <input type="text" id="edit-pay-notes" class="form-input" placeholder="e.g. Verified against bank statement">
+          </div>
+        </div>
+
+        <!-- Form Submission Footer -->
+        <div class="action-buttons-row mt-4">
+          <button type="submit" class="btn btn-primary font-bold" id="btn-save-admin-edit">
+            💾 Save All Updates
+          </button>
+          <button type="button" class="btn btn-secondary" id="btn-admin-edit-cancel-bottom">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= IMAGE LIGHTBOX MODAL ================= -->
+  <div class="modal-overlay hidden" id="lightbox-modal">
+    <div class="lightbox-content">
+      <button type="button" class="modal-close lightbox-close" id="lightbox-close">&times;</button>
+      <img id="lightbox-img" src="" alt="Payment Receipt Proof Enclosure" class="lightbox-image">
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

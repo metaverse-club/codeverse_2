@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeVerse 2.0 powered by PwC — 36-Hour National Flagship Hackathon | Metaversity Club</title>
+  <meta name="description"
+    content="CodeVerse 2.0 — National Flagship Hackathon organized by Metaversity Club, VIT Bhopal University. Squad of 4 members, ₹400/team. Round 1 (Nov 1st Week) Online + Round 2 (28-29 Nov) Grand Finale at Audi 1 & 2. Top 11 teams get Stipend Internships up to ₹25,000.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <!-- Interactive Particle Background Canvas -->
+  <canvas id="particle-canvas" class="particle-canvas" aria-hidden="true"></canvas>
+
+  <!-- Ambient Light Mesh Orbs -->
+  <div class="ambient-glow glow-1" aria-hidden="true"></div>
+  <div class="ambient-glow glow-2" aria-hidden="true"></div>
+  <div class="ambient-glow glow-3" aria-hidden="true"></div>
+
+  <!-- Live Marquee Ticker -->
+  <div class="live-ticker-banner" aria-label="Hackathon Updates Ticker">
+    <div class="ticker-scroll">
+      <div class="ticker-content">
+        <span class="ticker-badge"><span class="pulse-dot"></span> REG DEADLINE: 12 NOV 2026</span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">CodeVerse 2.0 // NATIONAL FLAGSHIP HACKATHON</span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">SQUAD PASS: <strong>₹400 / TEAM (4 MEMBERS)</strong></span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">ROUND 1: <strong>15–20 NOV (ONLINE)</strong> • ROUND 2: <strong
+            class="text-copper">28–29 NOV (OFFLINE)</strong></span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">TOP 3 TEAMS → <strong class="text-copper">25K INTERNSHIP</strong> • TOP 10 TEAMS → <strong class="text-copper">PAID INTERNSHIPS</strong></span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">HOST: <strong>Metaversity Club, VIT BHOPAL</strong></span>
+        <span class="ticker-sep">•</span>
+      </div>
+      <!-- Repeat for infinite loop -->
+      <div class="ticker-content" aria-hidden="true">
+        <span class="ticker-badge"><span class="pulse-dot"></span> REG DEADLINE: 12 NOV 2026</span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">CodeVerse 2.0 // NATIONAL FLAGSHIP HACKATHON</span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">SQUAD PASS: <strong>₹400 / TEAM (4 MEMBERS)</strong></span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">ROUND 1: <strong>15–20 NOV (ONLINE)</strong> • ROUND 2: <strong
+            class="text-copper">28–29 NOV (OFFLINE)</strong></span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">TOP 3 TEAMS → <strong class="text-copper">25K INTERNSHIP</strong> • TOP 10 TEAMS → <strong class="text-copper">PAID INTERNSHIPS</strong></span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">HOST: <strong>Metaversity Club, VIT BHOPAL</strong></span>
+        <span class="ticker-sep">•</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Glassmorphism Navigation Bar -->
+  <header class="navbar" id="main-nav">
+    <div class="nav-container">
+      <!-- Left: Logo & Website Name -->
+      <a href="index.html" class="nav-brand">
+        <div class="brand-logo-badge">
+          <span class="brand-glyph">CV</span>
+        </div>
+        <div class="brand-text-block">
+          <span class="brand-title">Code<span class="gradient-text">Verse</span></span>
+          <span class="brand-sub">2.0</span>
+        </div>
+      </a>
+
+      <!-- Right: Track Status, Edit Details, Admin, Contact -->
+      <div class="nav-actions-right">
+        <button type="button" class="nav-btn nav-btn-track" id="nav-track-btn"
+          title="Track Squad Verification & Payment Status">
+          <span class="nav-btn-icon">🔍</span>
+          <span class="nav-btn-label">Track Status</span>
+        </button>
+
+        <button type="button" class="nav-btn nav-btn-edit" id="nav-edit-team-btn"
+          title="Edit your squad details & roster">
+          <span class="nav-btn-icon">✏️</span>
+          <span class="nav-btn-label">Edit Details</span>
+        </button>
+
+        <a href="#contact-section"
+          class="nav-btn nav-btn-contact" title="Direct WhatsApp Support">
+          <span class="nav-btn-icon">📞</span>
+          <span class="nav-btn-label">Contact</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= HERO SECTION WITH 3D FLOATING ELEMENTS & TYPEWRITER ================= -->
+  <section class="hero-section" id="hero">
+    <!-- Floating 3D Background Elements -->
+    <div class="floating-badge badge-top-left parallax-layer" data-depth="0.08">
+      <span class="floating-icon">⚡</span> 2 Rounds • Grand Finale
+    </div>
+    <div class="floating-badge badge-top-right parallax-layer" data-depth="0.12">
+      <span class="floating-icon">🌐</span> Metaversity Club Flagship
+    </div>
+    <div class="floating-badge badge-bottom-left parallax-layer" data-depth="0.15">
+      <span class="floating-icon">💼</span> Internships up to ₹25K
+    </div>
+    <div class="floating-badge badge-bottom-right parallax-layer" data-depth="0.10">
+      <span class="floating-icon">👥</span> 4 Members / Team
+    </div>
+
+    <div class="container hero-content">
+      <!-- Announcement Pill -->
+      <div class="hero-pill-announcement" data-reveal>
+        <span class="pill-spark">🔥</span>
+        <span class="pill-text">CodeVerse 2.0 powered by PwC • VIT Bhopal University</span>
+      </div>
+
+      <!-- Main Heading with Typewriter -->
+      <h1 class="hero-title" data-reveal>
+        Build the Next Generation of <br>
+        <span class="gradient-text typewriter-target" id="typewriter-text">Autonomous AI Agents</span><span
+          class="typewriter-cursor">|</span>
+      </h1>
+
+      <!-- Subtitle -->
+      <p class="hero-subtitle" data-reveal>
+        Assemble your squad of <strong>4 members</strong> for a multi-round national hackathon engineered by
+        <strong>Metaversity Club</strong>.
+      </p>
+
+      <!-- CTA Action Buttons -->
+      <div class="hero-cta-group" data-reveal>
+        <a href="register.html" class="btn btn-primary btn-glow" id="hero-register-btn">
+          <span class="btn-text">Register Your Team</span>
+          <span class="btn-arrow">→</span>
+        </a>
+        <a href="#sectors" class="btn btn-glass">
+          <span>Explore Sectors & Bounties ↓</span>
+        </a>
+      </div>
+
+      <!-- 3D Glassmorphic Key Metrics Strip -->
+      <div class="metrics-glass-strip" data-reveal>
+        <div class="metric-block">
+          <div class="metric-icon-wrap">👥</div>
+          <div class="metric-details">
+            <span class="metric-caption">TEAM SIZE</span>
+            <strong class="metric-num">4 Members</strong>
+          </div>
+        </div>
+
+        <div class="metric-divider"></div>
+
+        <div class="metric-block">
+          <div class="metric-icon-wrap">💳</div>
+          <div class="metric-details">
+            <span class="metric-caption">ENTRY FEES</span>
+            <strong class="metric-num">₹400 / Team</strong>
+          </div>
+        </div>
+
+        <div class="metric-divider"></div>
+
+        <div class="metric-block">
+          <div class="metric-icon-wrap">💻</div>
+          <div class="metric-details">
+            <span class="metric-caption">ROUND 1</span>
+            <strong class="metric-num">15–20 Nov</strong>
+          </div>
+        </div>
+
+        <div class="metric-divider"></div>
+
+        <div class="metric-block">
+          <div class="metric-icon-wrap">🏛️</div>
+          <div class="metric-details">
+            <span class="metric-caption">ROUND 2</span>
+            <strong class="metric-num text-copper">28–29 Nov</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PARTNERS & SPONSORS ================= -->
+  <section class="section" id="sponsors">
+    <div class="container">
+      <div class="section-head text-center" data-reveal>
+        <div class="section-tag">[ ECOSYSTEM ALLIANCES ]</div>
+        <h2 class="section-title">Backed by <span class="gradient-text">Leading Partners</span></h2>
+        <p class="section-sub">
+          Supported by leading developer ecosystems, academic institutions, and national banking infrastructure.
+        </p>
+      </div>
+
+      <div class="sponsors-wrapper">
+        <!-- Title Sponsor -->
+        <a href="https://www.parshwebcraft.in/" target="_blank" rel="noopener" class="sponsor-card title-sponsor" data-reveal>
+          <div class="sponsor-glow"></div>
+          <div class="sponsor-category">Title Sponsor</div>
+          <div class="sponsor-logo-icon" style="width: 140px; height: 140px;">
+            <img src="parshwebcraft_logo.png" alt="PwC">
+          </div>
+          <div class="sponsor-info">
+            <h3 class="sponsor-heading">PwC</h3>
+            <p class="sponsor-caption">CodeVerse 2.0 is powered by PwC</p>
+          </div>
+        </a>
+
+        <!-- Platform Partner -->
+        <a href="https://www.hackerearth.com/" target="_blank" rel="noopener" class="sponsor-card" data-reveal>
+          <div class="sponsor-glow"></div>
+          <div class="sponsor-category">Platform Partner</div>
+          <div class="sponsor-logo-icon bg-white">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e8/HackerEarth_logo.png" alt="HackerEarth">
+          </div>
+          <div class="sponsor-info">
+            <h3 class="sponsor-heading">HackerEarth</h3>
+            <p class="sponsor-caption">Official Platform Partner</p>
+          </div>
+        </a>
+
+        <!-- Technology Sponsor -->
+        <a href="https://getalchemystai.com/" target="_blank" rel="noopener" class="sponsor-card" data-reveal>
+          <div class="sponsor-glow"></div>
+          <div class="sponsor-category">Tech Sponsor</div>
+          <div class="sponsor-logo-icon bg-dark">
+            <img src="https://getalchemystai.com/icon.png" alt="Alchemyst AI">
+          </div>
+          <div class="sponsor-info">
+            <h3 class="sponsor-heading">Alchemyst AI</h3>
+            <p class="sponsor-caption">Technology Sponsor</p>
+          </div>
+        </a>
+
+        <!-- Lead Host -->
+        <a href="https://metaversity-club-vitb.vercel.app/" target="_blank" rel="noopener" class="sponsor-card" data-reveal>
+          <div class="sponsor-glow"></div>
+          <div class="sponsor-category">Lead Host</div>
+          <div class="sponsor-logo-icon rounded-full">
+            <img src="metaverse_logo.jpg" alt="Metaversity Club">
+          </div>
+          <div class="sponsor-info">
+            <h3 class="sponsor-heading">Metaversity Club</h3>
+            <p class="sponsor-caption">Lead Organizing Community</p>
+          </div>
+        </a>
+
+        <!-- Community Partner -->
+        <a href="https://osen.live/" target="_blank" rel="noopener" class="sponsor-card" data-reveal>
+          <div class="sponsor-glow"></div>
+          <div class="sponsor-category">Community Partner</div>
+          <div class="sponsor-logo-icon">
+            <img src="https://osen.live/white_osen_log.png" alt="OSEN" style="object-fit: contain; width: 120px;">
+          </div>
+          <div class="sponsor-info">
+            <h3 class="sponsor-heading">OSEN</h3>
+            <p class="sponsor-caption">Hackathon Ecosystem Partner</p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ABOUT & ECOSYSTEM SECTION ================= -->
+  <section class="section" id="about">
+    <div class="container">
+      <div class="section-head text-center" data-reveal>
+        <div class="section-tag">[ Metaversity Club DIRECTIVE ]</div>
+        <h2 class="section-title">Engineered for <span class="gradient-text">Relentless Creators</span></h2>
+        <p class="section-sub">
+          CodeVerse is not just a hackathon — it's an immersive 36-hour physical experience that connects passionate
+          collegiate engineers with high-impact mentors, industry-level tooling, and real prizes.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <div class="glass-card tilt-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="feature-icon">🌐</div>
+          <h3 class="feature-title">Metaversity Club Ecosystem</h3>
+          <p class="feature-desc">
+            Organized by VIT Bhopal's leading student developer community dedicated to emerging tech, distributed
+            systems, and real-world software craft.
+          </p>
+        </div>
+
+        <div class="glass-card tilt-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="feature-icon">🧠</div>
+          <h3 class="feature-title">1:1 Architecture Mentorship</h3>
+          <p class="feature-desc">
+            Continuous guidance and code reviews from senior engineers, founders, and industry experts stationed
+            on-ground with you.
+          </p>
+        </div>
+
+        <div class="glass-card tilt-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="feature-icon">🍱</div>
+          <h3 class="feature-title">Complete Fuel & Facilities</h3>
+          <p class="feature-desc">
+            Continuous midnight energy drinks, meals, coffee stations, resting pods, high-speed campus WiFi, and
+            dedicated power grids for every team.
+          </p>
+        </div>
+
+        <div class="glass-card tilt-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="feature-icon">🎁</div>
+          <h3 class="feature-title">Exclusive Swag & Merch Kits</h3>
+          <p class="feature-desc">
+            CodeVerse tactical apparel, sticker packs, custom NFC credentials, sponsor credits, and cloud credits for
+            all participants.
+          </p>
+        </div>
+
+        <div class="glass-card tilt-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="feature-icon">💼</div>
+          <h3 class="feature-title">Venture & Hiring Pipeline</h3>
+          <p class="feature-desc">
+            Direct opportunity to pitch your prototype to early-stage investors, startup accelerators, and unlock paid
+            internship opportunities.
+          </p>
+        </div>
+
+        <div class="glass-card tilt-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="feature-icon">📜</div>
+          <h3 class="feature-title">Verified Credentials & Trophies</h3>
+          <p class="feature-desc">
+            Cryptographically verifiable certificates, physical championship trophies, and national portfolio accolades
+            for all finalist squads.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= INNOVATION SECTORS / TRACKS ================= -->
+  <section class="section" id="sectors">
+    <div class="container">
+      <div class="section-head text-center" data-reveal>
+        <div class="section-tag">[ DOMAINS & BATTLEGROUNDS ]</div>
+        <h2 class="section-title">Target <span class="gradient-text">Innovation Sectors</span></h2>
+        <p class="section-sub">
+          Select one of 6 focus tracks for your team's project. Interdisciplinary solutions and bold moonshots are
+          highly welcomed.
+        </p>
+      </div>
+
+      <div class="sectors-grid">
+        <!-- Sector 1 -->
+        <div class="glass-card sector-card tilt-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="sector-head">
+            <div class="sector-icon-box">🤖</div>
+            <span class="sector-num">01</span>
+          </div>
+          <h3 class="sector-name">AI & Intelligent Systems</h3>
+          <p class="sector-desc">
+            Build autonomous reasoning agents, multimodal vision models, localized edge AI tools, and intelligent RAG
+            workflows.
+          </p>
+          <div class="sector-tags">
+            <span class="tag">Autonomous Agents</span>
+            <span class="tag">Multimodal</span>
+            <span class="tag">Vision AI</span>
+          </div>
+        </div>
+
+        <!-- Sector 2 -->
+        <div class="glass-card sector-card tilt-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="sector-head">
+            <div class="sector-icon-box">🌐</div>
+            <span class="sector-num">02</span>
+          </div>
+          <h3 class="sector-name">Web3, DeFi & Cryptography</h3>
+          <p class="sector-desc">
+            Architect zero-knowledge proofs, smart contract primitives, algorithmic liquidity mechanisms, and
+            decentralized identity.
+          </p>
+          <div class="sector-tags">
+            <span class="tag">ZK-Proofs</span>
+            <span class="tag">Smart Contracts</span>
+            <span class="tag">DeFi Rails</span>
+          </div>
+        </div>
+
+        <!-- Sector 3 -->
+        <div class="glass-card sector-card tilt-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="sector-head">
+            <div class="sector-icon-box">🛡️</div>
+            <span class="sector-num">03</span>
+          </div>
+          <h3 class="sector-name">Cybersecurity & Cloud Resilience</h3>
+          <p class="sector-desc">
+            Develop zero-trust access gateways, automated intrusion detection, container security scanners, and privacy
+            tools.
+          </p>
+          <div class="sector-tags">
+            <span class="tag">Zero-Trust</span>
+            <span class="tag">Threat Intel</span>
+            <span class="tag">DevSecOps</span>
+          </div>
+        </div>
+
+        <!-- Sector 4 -->
+        <div class="glass-card sector-card tilt-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="sector-head">
+            <div class="sector-icon-box">🩺</div>
+            <span class="sector-num">04</span>
+          </div>
+          <h3 class="sector-name">HealthTech & BioInformatics</h3>
+          <p class="sector-desc">
+            Engineer automated medical diagnosis helpers, biosignal classifiers, telemedicine networks, and accessible
+            healthcare tools.
+          </p>
+          <div class="sector-tags">
+            <span class="tag">Telemedicine</span>
+            <span class="tag">Biosignals</span>
+            <span class="tag">Diagnostics</span>
+          </div>
+        </div>
+
+        <!-- Sector 5 -->
+        <div class="glass-card sector-card tilt-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="sector-head">
+            <div class="sector-icon-box">💳</div>
+            <span class="sector-num">05</span>
+          </div>
+          <h3 class="sector-name">FinTech & Algorithmic Systems</h3>
+          <p class="sector-desc">
+            Build high-throughput micro-settlement routers, fraud detection graphs, automated ledger reconciliations,
+            and budgeting tools.
+          </p>
+          <div class="sector-tags">
+            <span class="tag">Payment Rails</span>
+            <span class="tag">Fraud AI</span>
+            <span class="tag">Algorithmic</span>
+          </div>
+        </div>
+
+        <!-- Sector 6 -->
+        <div class="glass-card sector-card tilt-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="sector-head">
+            <div class="sector-icon-box">🚀</div>
+            <span class="sector-num">06</span>
+          </div>
+          <h3 class="sector-name">Open Innovation / Moonshots</h3>
+          <p class="sector-desc">
+            Have a game-changing idea in Robotics, IoT, AgriTech, Clean Energy, or EdTech? Bring your wildest prototype
+            to life.
+          </p>
+          <div class="sector-tags">
+            <span class="tag">Hardware & IoT</span>
+            <span class="tag">AgriTech</span>
+            <span class="tag">CleanTech</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ROUNDS & TIMELINE ================= -->
+  <section class="section" id="rounds">
+    <div class="container">
+      <div class="section-head text-center" data-reveal>
+        <div class="section-tag">[ HACKATHON ROUNDS & TIMELINE ]</div>
+        <h2 class="section-title">Two-Round <span class="gradient-text">Battle Structure</span></h2>
+        <p class="section-sub">
+          CodeVerse 2.0 follows a rigorous 2-round format — qualify online in Round 1, then compete in the Grand Finale
+          at VIT Bhopal.
+        </p>
+      </div>
+
+      <div class="prizes-grid">
+        <!-- Round 1 -->
+        <div class="glass-card prize-card rank-silver" data-reveal>
+          <div class="card-glow"></div>
+          <div class="prize-rank-pill">🖥️ Theme: AI for everyone</div>
+          <div class="prize-val">Round 1</div>
+          <h3 class="prize-title">15 to 20 November • Results: 23 Nov</h3>
+          <ul class="prize-list">
+            <li>✓ Online project submission & evaluation</li>
+            <li>✓ Top 3 Winners: ₹15,000 (divided equally)</li>
+            <li>✓ Digital Certificates & Bluetooth Speakers</li>
+            <li>✓ T-shirts for top performers</li>
+          </ul>
+        </div>
+
+        <!-- Round 2 (Grand Finale) -->
+        <div class="glass-card prize-card rank-gold featured-prize tilt-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="grand-champion-banner">🏟️ GRAND FINALE</div>
+          <div class="prize-rank-pill gold-pill">🎯 Offline @ VIT Bhopal</div>
+          <div class="prize-val text-copper">Round 2</div>
+          <h3 class="prize-title">28–29 November • Offline</h3>
+          <ul class="prize-list">
+            <li>✓ Grand Finale Hackathon Event</li>
+            <li>✓ 25K Internship for Top 3 Teams</li>
+            <li>✓ Paid Internship for Top 10 Teams</li>
+            <li>✓ Goodies & Refreshments</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= WINNERS SECTION ================= -->
+  <section class="section" id="winners">
+    <div class="container">
+      <div class="section-head text-center" data-reveal>
+        <div class="section-tag">[ GLORY & REWARDS ]</div>
+        <h2 class="section-title">Grand Finale <span class="gradient-text">Winners</span></h2>
+        <p class="section-sub">
+          The ultimate champions will take home exclusive honors and premium perks.
+        </p>
+      </div>
+
+      <div class="prizes-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-bottom: 40px; gap: 30px;">
+        <!-- 1st Place -->
+        <div class="glass-card prize-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="prize-rank-pill gold-pill">🥇 1st Place</div>
+          <div class="prize-val" style="color: #ffb703;">$1200</div>
+          <h3 class="prize-title">Alchemyst AI Credits</h3>
+          <ul class="prize-list">
+            <li>✓ Championship Trophy & Medals</li>
+            <li>✓ Physical Winner Certificate</li>
+            <li>✓ Exclusive Goodies & Merch</li>
+          </ul>
+        </div>
+        
+        <!-- 2nd Place -->
+        <div class="glass-card prize-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="prize-rank-pill" style="background: rgba(192, 192, 192, 0.1); color: #c0c0c0; border-color: rgba(192, 192, 192, 0.3);">🥈 2nd Place</div>
+          <div class="prize-val" style="color: #c0c0c0;">$800</div>
+          <h3 class="prize-title">Alchemyst AI Credits</h3>
+          <ul class="prize-list">
+            <li>✓ Runner-up Medals</li>
+            <li>✓ Physical Winner Certificate</li>
+            <li>✓ Exclusive Goodies & Merch</li>
+          </ul>
+        </div>
+
+        <!-- 3rd Place -->
+        <div class="glass-card prize-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="prize-rank-pill" style="background: rgba(205, 127, 50, 0.1); color: #cd7f32; border-color: rgba(205, 127, 50, 0.3);">🥉 3rd Place</div>
+          <div class="prize-val" style="color: #cd7f32;">$500</div>
+          <h3 class="prize-title">Alchemyst AI Credits</h3>
+          <ul class="prize-list">
+            <li>✓ 2nd Runner-up Medals</li>
+            <li>✓ Physical Winner Certificate</li>
+            <li>✓ Exclusive Goodies & Merch</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Participation Perks -->
+      <div style="max-width: 600px; margin: 0 auto; margin-bottom: 40px;">
+        <div class="glass-card prize-card" data-reveal>
+          <div class="card-glow"></div>
+          <div class="prize-rank-pill" style="background: rgba(0, 243, 255, 0.1); color: #00f3ff; border-color: rgba(0, 243, 255, 0.3);">🌟 All Participants</div>
+          <div class="prize-val" style="color: #00f3ff;">$50</div>
+          <h3 class="prize-title">Alchemyst AI Credits</h3>
+          <ul class="prize-list">
+            <li>✓ Guaranteed credits for every participant</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FAQ ACCORDION ================= -->
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-head text-center" data-reveal>
+        <div class="section-tag">[ KNOWLEDGE BASE ]</div>
+        <h2 class="section-title">Frequently Asked <span class="gradient-text">Questions</span></h2>
+        <p class="section-sub">
+          Everything you need to know about team rules, registration pass, UTR verification, and logistics.
+        </p>
+      </div>
+
+      <div class="faq-container">
+        <div class="faq-item glass-card" data-reveal>
+          <button type="button" class="faq-btn">
+            <span class="faq-q-text">What is the team size for CodeVerse 2.0?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-panel">
+            <p>
+              Each team must have <strong>4 members</strong> (1 Team Leader + 3 Members). No more, no fewer. Individual
+              registrations or teams with a different count will not be accepted.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item glass-card" data-reveal>
+          <button type="button" class="faq-btn">
+            <span class="faq-q-text">Who is eligible to participate in CodeVerse 2.0?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-panel">
+            <p>
+              <strong>VIT Bhopal students:</strong> Only <strong>hostellers</strong> are allowed to participate. Day
+              scholars of VIT Bhopal are <strong>not eligible</strong>.<br>
+              <strong>Other colleges:</strong> Students from any recognized university or college across India are fully
+              welcome. Cross-departmental and inter-college squads are permitted.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item glass-card" data-reveal>
+          <button type="button" class="faq-btn">
+            <span class="faq-q-text">What is the registration fee and how do we pay?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-panel">
+            <p>
+              The registration fee is a flat <strong>₹400 per team</strong> (covering all 4 members). Payment can be
+              executed via <strong>UPI</strong> (scanning our verified QR code) or via direct <strong>Indian Bank
+                transfer</strong> (NEFT/IMPS).
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item glass-card" data-reveal>
+          <button type="button" class="faq-btn">
+            <span class="faq-q-text">How does UTR submission and verification work?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-panel">
+            <p>
+              After completing the transfer in your UPI or banking app, copy your 12-digit UTR / Transaction reference
+              number and take a screenshot. Submit these on Step 4 of the registration wizard. Organizers verify and
+              confirm your status within 2–4 hours.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item glass-card" data-reveal>
+          <button type="button" class="faq-btn">
+            <span class="faq-q-text">Are meals, overnight resting bays, and WiFi provided?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-panel">
+            <p>
+              Yes! All confirmed offline participants receive continuous high-speed campus WiFi, midnight energy drinks,
+              resting zones, and dedicated power sockets throughout the 36-hour
+              sprint.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item glass-card" data-reveal>
+          <button type="button" class="faq-btn">
+            <span class="faq-q-text">Can we edit our team details or member roster after registering?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-panel">
+            <p>
+              Yes! Students can click the <strong>✏️ Edit Details</strong> option in the top navigation bar, enter their
+              unique Registration ID (e.g. <code>CV26-TM-XXXXX</code>), and update their squad name, sector, project
+              statement, or member roster until the organizer-defined edit deadline.
+            </p>
+          </div>
+        </div>
+        <div class="faq-item glass-card" data-reveal>
+          <button type="button" class="faq-btn">
+            <span class="faq-q-text">What are the two rounds and their dates?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-panel">
+            <p>
+              <strong>Round 1 (November First Week):</strong> Online project submission and evaluation. All teams
+              receive goodies, e-certificates, and Alchemyst free credits.<br>
+              <strong>Round 2 (28–29 November):</strong> Grand Finale at <strong>Audi 1 & 2, VIT Bhopal</strong>.
+              Selected teams compete in a 36-hour offline hackathon with goodies, e-certificates, refreshments/meals,
+              and Alchemyst credits.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item glass-card" data-reveal>
+          <button type="button" class="faq-btn">
+            <span class="faq-q-text">What do the Top 11 teams receive?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-panel">
+            <p>
+              The <strong>Top 11 teams</strong> get a direct chance for <strong>paid Stipend Internships up to
+                ₹25,000</strong> (interview-based selection). Winners additionally receive championship medals, physical
+              certificates, exclusive goodies, and trophies.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item glass-card" data-reveal>
+          <button type="button" class="faq-btn">
+            <span class="faq-q-text">Can day scholars from VIT Bhopal participate?</span>
+            <span class="faq-icon">+</span>
+          </button>
+          <div class="faq-panel">
+            <p>
+              <strong>No.</strong> Only VIT Bhopal <strong>hostellers</strong> are allowed to participate. Day scholars
+              of VIT Bhopal are not eligible. However, students from any other college or university across India are
+              fully welcome to register.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CONTACT & READY TO BUILD BANNER ================= -->
+  <section class="section contact-section" id="contact">
+    <div class="container">
+      <div class="glass-card cta-banner-card tilt-card" data-reveal>
+        <div class="card-glow"></div>
+        <div class="cta-banner-content" id="contact-section">
+          <div class="section-tag">[ READY TO HACK? ]</div>
+          <h2 class="cta-heading">Ready to Build the <span class="gradient-text">Future of Tech?</span></h2>
+          <p class="cta-sub">
+            Assemble your squad of exactly 4 members and register for ₹400. Round 1 starts November First Week! Top 11
+            teams earn Stipend Internships up to ₹25K.
+          </p>
+
+          <div class="contact-methods-grid">
+            <a href="https://wa.me/918305801086" target="_blank" class="contact-chip">
+              <span class="chip-icon">📞</span>
+              <div class="chip-details">
+                <span class="chip-label">Event Related Issues</span>
+                <strong>+91 83058 01086</strong>
+              </div>
+            </a>
+
+            <a href="https://wa.me/919956361794" target="_blank" class="contact-chip">
+              <span class="chip-icon">🛠️</span>
+              <div class="chip-details">
+                <span class="chip-label">Technical Issues</span>
+                <strong>+91 99563 61794</strong>
+              </div>
+            </a>
+
+
+
+            <div class="contact-chip">
+              <span class="chip-icon">📍</span>
+              <div class="chip-details">
+                <span class="chip-label">Hackathon Venue</span>
+                <strong>VIT Bhopal University, MP</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="cta-button-row">
+            <a href="register.html" class="btn btn-primary btn-glow">
+              <span>🚀 Register Squad (₹400 • 4 Members) →</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TRACK STATUS MODAL ================= -->
+  <div class="modal-overlay hidden" id="track-modal" aria-modal="true" role="dialog">
+    <div class="modal-card glass-modal">
+      <div class="modal-header">
+        <h3 class="modal-title">🔍 Track Squad Verification Status</h3>
+        <button type="button" class="modal-close-btn" id="modal-track-close" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          Enter your unique <strong>Registration ID</strong> (e.g. <code>CV26-TM-48291</code>) to query your live
+          submission and payment verification state.
+        </p>
+        <div class="lookup-input-row">
+          <input type="text" id="track-search-input" class="form-input monospace" placeholder="CV26-TM-XXXXX"
+            autocomplete="off">
+          <button type="button" class="btn btn-primary" id="btn-lookup-status">Query Status</button>
+        </div>
+
+        <div id="track-result-container" class="track-result hidden">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= EDIT TEAM DETAILS MODAL ================= -->
+  <div class="modal-overlay hidden" id="edit-modal" aria-modal="true" role="dialog">
+    <div class="modal-card glass-modal modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">✏️ Modify Squad & Member Roster</h3>
+          <span class="modal-subtitle">Update squad name, sector, project statement, or member details</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="modal-edit-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Lookup Step -->
+        <div id="edit-lookup-zone" class="edit-lookup-box">
+          <p class="modal-desc">
+            Enter your official <strong>Registration ID</strong> (e.g. <code>CV26-TM-48291</code>) to unlock your
+            editable profile.
+          </p>
+          <div class="lookup-input-row">
+            <input type="text" id="edit-search-input" class="form-input monospace" placeholder="CV26-TM-XXXXX"
+              autocomplete="off">
+            <button type="button" class="btn btn-primary" id="btn-lookup-edit">Unlock Profile</button>
+          </div>
+        </div>
+
+        <!-- Deadline Expired Locked Notice -->
+        <div id="edit-deadline-expired-banner" class="deadline-expired-card hidden">
+          <div class="expired-icon">🔒</div>
+          <div class="expired-info">
+            <strong class="expired-title">Editing Window Closed</strong>
+            <p class="expired-desc" id="expired-deadline-message">
+              The organizer deadline to modify team details has passed. No further changes can be submitted. If you have
+              an urgent inquiry, contact Technical Support via WhatsApp: <a href="https://wa.me/919956361794" target="_blank" style="color: #6366f1;">+91 99563 61794</a>.
+            </p>
+          </div>
+        </div>
+
+        <!-- Form Edit Zone (Populated dynamically) -->
+        <form id="form-edit-team" class="hidden edit-form-container" novalidate>
+          <div class="edit-banner-info">
+            <div class="edit-reg-display">
+              <span class="edit-reg-label">Active ID:</span>
+              <strong class="edit-reg-val monospace" id="edit-current-reg-id">CV26-TM-XXXXX</strong>
+            </div>
+            <div id="edit-deadline-pill" class="edit-deadline-pill">
+              <span>⏳ Cutoff: <strong id="edit-deadline-text">Open</strong></span>
+            </div>
+          </div>
+
+          <!-- Section 1: Team & Project Profile -->
+          <div class="form-section-title">
+            <span class="section-icon">🏷️</span> Squad Identity & Sector
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="edit-team-name" class="form-label">
+                Squad Name <span class="required">*</span>
+              </label>
+              <input type="text" id="edit-team-name" class="form-input" required autocomplete="off">
+            </div>
+
+            <div class="form-group">
+              <label for="edit-team-track" class="form-label">
+                Innovation Sector <span class="required">*</span>
+              </label>
+              <select id="edit-team-track" class="form-input" required>
+                <option value="AI & Intelligent Systems">AI & Intelligent Systems</option>
+                <option value="Web3, DeFi & Decentralized Apps">Web3, DeFi & Decentralized Apps</option>
+                <option value="Cybersecurity & Cloud Resilience">Cybersecurity & Cloud Resilience</option>
+                <option value="HealthTech & Biomedical Engineering">HealthTech & Biomedical Engineering</option>
+                <option value="FinTech & Algorithmic Solutions">FinTech & Algorithmic Solutions</option>
+                <option value="Open Innovation / Student Track">Open Innovation / Student Track</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group mb-4">
+            <label for="edit-project-title" class="form-label">
+              Proposed Problem Statement / Project Title <small class="text-muted">(Optional)</small>
+            </label>
+            <input type="text" id="edit-project-title" class="form-input"
+              placeholder="e.g. Decentralized Credential Verification Protocol">
+          </div>
+
+          <!-- Section 2: Team Leader Details -->
+          <div class="leader-card mb-4">
+            <div class="leader-card-header">
+              <div class="leader-badge-pill">
+                <span class="crown-icon">👑</span> Team Leader (Member 1)
+              </div>
+              <span class="leader-tagline">Primary Contact & Lead Admin</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="edit-leader-name" class="form-label">Full Name <span class="required">*</span></label>
+                <input type="text" id="edit-leader-name" class="form-input" required>
+              </div>
+
+              <div class="form-group">
+                <label for="edit-leader-reg" class="form-label">College Reg. / Roll No. <span
+                    class="required">*</span></label>
+                <input type="text" id="edit-leader-reg" class="form-input" required>
+              </div>
+
+              <div class="form-group">
+                <label for="edit-leader-email" class="form-label">College Email <span class="required">*</span></label>
+                <input type="email" id="edit-leader-email" class="form-input" required>
+              </div>
+
+              <div class="form-group">
+                <label for="edit-leader-phone" class="form-label">Phone / WhatsApp Number <span
+                    class="required">*</span></label>
+                <input type="tel" id="edit-leader-phone" class="form-input" required maxlength="15">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Dynamic Members (4 total) -->
+          <div class="form-section-title">
+            <span class="section-icon">👥</span> Squad Members Roster (4 Members Total)
+          </div>
+
+          <div id="dynamic-edit-members-container" class="members-edit-list">
+            <!-- Populated dynamically (members 2 to 4) -->
+          </div>
+
+          <!-- Add / Remove Member Buttons (hidden for strict 4-member rule) -->
+          <div class="member-controls-row" style="display:none;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-edit-add-member">
+              ➕ Add Member (Max 4)
+            </button>
+            <button type="button" class="btn btn-danger-soft btn-sm" id="btn-edit-remove-member">
+              ➖ Remove Last Member (Min 4)
+            </button>
+          </div>
+
+          <!-- Submit Buttons -->
+          <div class="edit-actions-footer">
+            <button type="button" class="btn btn-secondary" id="btn-edit-cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-glow" id="btn-save-team-edit">
+              💾 Save & Sync Details
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Modern Dark Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <div class="footer-left">
+        <div class="footer-brand">
+          <span class="footer-logo">Code<span class="gradient-text">Verse</span> 2.0</span>
+          <span class="footer-badge">HOSTED BY Metaversity Club</span>
+        </div>
+        <p class="footer-sub">36-Hour National Flagship Hackathon • VIT Bhopal University</p>
+      </div>
+      <div class="footer-right">
+        <a href="#about" class="footer-link">About</a>
+        <span class="footer-sep">•</span>
+        <a href="#tracks" class="footer-link">Tracks</a>
+        <span class="footer-sep">•</span>
+        <a href="#rounds" class="footer-link">Rounds & Perks</a>
+        <span class="footer-sep">•</span>
+        <a href="#sponsors" class="footer-link">Partners</a>
+        <span class="footer-sep">•</span>
+        <a href="#faq" class="footer-link">FAQ</a>
+        <span class="footer-sep">•</span>
+        <a href="#contact-section" class="footer-link">Contact</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>Official Payment Gateway: Indian Bank (IDIB000V143) • Metaversity Club Account • All Rights Reserved ©
+        2026</span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    // Clear any partial registration state if the user returns to the homepage
+    sessionStorage.removeItem('codeverse_reg_state');
+  </script>
+</body>
+
+</html>
