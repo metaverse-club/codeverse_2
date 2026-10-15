@@ -513,6 +513,66 @@ function bindEvents() {
   });
   document.getElementById('form-edit-team')?.addEventListener('submit', handleSaveTeamEdit);
 
+  // Mobile Hamburger & Navigation Drawer Toggle
+  const hamburgerBtn = document.getElementById('nav-hamburger-btn');
+  const mobileDrawer = document.getElementById('mobile-menu-drawer');
+
+  function toggleMobileDrawer(forceState) {
+    if (!hamburgerBtn || !mobileDrawer) return;
+    const shouldOpen = typeof forceState === 'boolean' ? forceState : !mobileDrawer.classList.contains('open');
+    mobileDrawer.classList.toggle('open', shouldOpen);
+    hamburgerBtn.classList.toggle('active', shouldOpen);
+    hamburgerBtn.setAttribute('aria-expanded', String(shouldOpen));
+  }
+
+  hamburgerBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleMobileDrawer();
+  });
+
+  // Close drawer when clicking any link inside it
+  mobileDrawer?.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      toggleMobileDrawer(false);
+    });
+  });
+
+  // Close drawer when clicking outside
+  document.addEventListener('click', (e) => {
+    if (mobileDrawer?.classList.contains('open')) {
+      if (!mobileDrawer.contains(e.target) && !hamburgerBtn?.contains(e.target)) {
+        toggleMobileDrawer(false);
+      }
+    }
+  });
+
+  // Drawer Action Buttons
+  document.getElementById('drawer-track-btn')?.addEventListener('click', () => {
+    toggleMobileDrawer(false);
+    openTrackModal();
+  });
+
+  document.getElementById('drawer-edit-btn')?.addEventListener('click', () => {
+    toggleMobileDrawer(false);
+    openEditModal();
+  });
+
+  // Smooth scroll for nav links with offset for sticky navbar
+  document.querySelectorAll('.nav-link, .mobile-nav-link, .mobile-drawer-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      const targetId = link.getAttribute('href');
+      if (targetId && targetId.startsWith('#')) {
+        const targetEl = document.querySelector(targetId);
+        if (targetEl) {
+          e.preventDefault();
+          const navHeight = document.getElementById('main-nav')?.offsetHeight || 70;
+          const targetTop = targetEl.getBoundingClientRect().top + window.pageYOffset - navHeight - 12;
+          window.scrollTo({ top: targetTop, behavior: 'smooth' });
+        }
+      }
+    });
+  });
+
   // FAQ Accordion Interactivity
   document.querySelectorAll('.faq-item').forEach(item => {
     const questionBtn = item.querySelector('.faq-btn') || item.querySelector('.faq-question') || item;

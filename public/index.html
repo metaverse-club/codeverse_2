@@ -90,7 +90,18 @@
         </div>
       </a>
 
-      <!-- Right: Track Status, Edit Details, Admin, Contact -->
+      <!-- Center: Section Navigation Links (Rounds & Perks • Partners • FAQ • Contact) -->
+      <nav class="nav-links" id="nav-links" aria-label="Main Navigation">
+        <a href="#rounds" class="nav-link">Rounds &amp; Perks</a>
+        <span class="nav-link-sep" aria-hidden="true">•</span>
+        <a href="#partners" class="nav-link">Partners</a>
+        <span class="nav-link-sep" aria-hidden="true">•</span>
+        <a href="#faq" class="nav-link">FAQ</a>
+        <span class="nav-link-sep" aria-hidden="true">•</span>
+        <a href="#contact" class="nav-link">Contact</a>
+      </nav>
+
+      <!-- Right: Track Status, Edit Details, Register & Mobile Toggle -->
       <div class="nav-actions-right">
         <button type="button" class="nav-btn nav-btn-track" id="nav-track-btn"
           title="Track Squad Verification & Payment Status">
@@ -104,10 +115,64 @@
           <span class="nav-btn-label">Edit Details</span>
         </button>
 
-        <a href="#contact-section" class="nav-btn nav-btn-contact" title="Direct WhatsApp Support">
-          <span class="nav-btn-icon">📞</span>
-          <span class="nav-btn-label">Contact</span>
+        <a href="register.html" class="nav-btn nav-btn-primary nav-btn-reg-top" id="nav-reg-btn" title="Register Squad">
+          <span>Register</span>
         </a>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button type="button" class="nav-hamburger-btn" id="nav-hamburger-btn" aria-label="Toggle navigation menu" aria-expanded="false">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Sub-Navigation Bar (Sticky at the top for phones) -->
+    <div class="mobile-nav-bar" id="mobile-nav-bar">
+      <div class="mobile-nav-scroll">
+        <a href="#rounds" class="mobile-nav-link">Rounds &amp; Perks</a>
+        <span class="mobile-nav-sep" aria-hidden="true">•</span>
+        <a href="#partners" class="mobile-nav-link">Partners</a>
+        <span class="mobile-nav-sep" aria-hidden="true">•</span>
+        <a href="#faq" class="mobile-nav-link">FAQ</a>
+        <span class="mobile-nav-sep" aria-hidden="true">•</span>
+        <a href="#contact" class="mobile-nav-link">Contact</a>
+      </div>
+    </div>
+
+    <!-- Mobile Slide-Down Drawer Menu -->
+    <div class="mobile-menu-drawer" id="mobile-menu-drawer" aria-hidden="true">
+      <div class="mobile-drawer-inner">
+        <div class="mobile-drawer-links">
+          <a href="#rounds" class="mobile-drawer-link">
+            <span class="drawer-link-icon">🎯</span>
+            <span class="drawer-link-text">Rounds &amp; Perks</span>
+          </a>
+          <a href="#partners" class="mobile-drawer-link">
+            <span class="drawer-link-icon">🤝</span>
+            <span class="drawer-link-text">Partners &amp; Sponsors</span>
+          </a>
+          <a href="#faq" class="mobile-drawer-link">
+            <span class="drawer-link-icon">❓</span>
+            <span class="drawer-link-text">FAQ &amp; Rules</span>
+          </a>
+          <a href="#contact" class="mobile-drawer-link">
+            <span class="drawer-link-icon">📞</span>
+            <span class="drawer-link-text">Contact Support</span>
+          </a>
+        </div>
+        <div class="mobile-drawer-actions">
+          <button type="button" class="btn btn-secondary btn-full" id="drawer-track-btn">
+            🔍 Track Squad Status
+          </button>
+          <button type="button" class="btn btn-secondary btn-full" id="drawer-edit-btn">
+            ✏️ Edit Team Details
+          </button>
+          <a href="register.html" class="btn btn-primary btn-full">
+            🚀 Register Squad Now
+          </a>
+        </div>
       </div>
     </div>
   </header>
@@ -193,7 +258,8 @@
   </section>
 
   <!-- ================= PARTNERS & SPONSORS ================= -->
-  <section class="section" id="sponsors">
+  <section class="section" id="partners">
+    <div id="sponsors" style="position: relative; top: -90px; pointer-events: none;"></div>
     <div class="container">
       <div class="section-head text-center" data-reveal>
         <h2 class="section-title">Backed by <span class="gradient-text">Leading Partners</span></h2>
@@ -373,7 +439,8 @@
         </div>
         <h3 class="internship-head">Guaranteed High-Impact Internship Track</h3>
         <p class="internship-desc">
-          Fast-track career acceleration with hiring partners & fast-growing tech startups for all members of the top 3 winning squads.
+          Fast-track career acceleration with hiring partners & fast-growing tech startups for all members of the top 3
+          winning squads.
         </p>
 
         <!-- Creative Detailed Internship Perks Grid -->
@@ -382,7 +449,8 @@
             <span class="internship-perk-icon">🚀</span>
             <div>
               <div class="internship-perk-title">₹25K / Month Direct Stipend</div>
-              <div class="internship-perk-sub">Premium compensation package for all qualifying members of the top 3 winning teams.</div>
+              <div class="internship-perk-sub">Premium compensation package for all qualifying members of the top 3
+                winning teams.</div>
             </div>
           </div>
 
@@ -390,7 +458,8 @@
             <span class="internship-perk-icon">⚡</span>
             <div>
               <div class="internship-perk-title">Skip-The-Line Fast Track Interviews</div>
-              <div class="internship-perk-sub">Direct technical evaluation with founders & CTOs—bypassing standard online assessment filters.</div>
+              <div class="internship-perk-sub">Direct technical evaluation with founders & CTOs—bypassing standard
+                online assessment filters.</div>
             </div>
           </div>
 
@@ -398,7 +467,8 @@
             <span class="internship-perk-icon">🛠️</span>
             <div>
               <div class="internship-perk-title">Live Production Deployments</div>
-              <div class="internship-perk-sub">Architect and ship real-world LLM orchestration, full-stack microservices & cloud infrastructure.</div>
+              <div class="internship-perk-sub">Architect and ship real-world LLM orchestration, full-stack microservices
+                & cloud infrastructure.</div>
             </div>
           </div>
 
@@ -406,7 +476,8 @@
             <span class="internship-perk-icon">🧠</span>
             <div>
               <div class="internship-perk-title">1:1 Executive Tech Mentorship</div>
-              <div class="internship-perk-sub">Dedicated weekly architectural guidance, code reviews, and career coaching with veteran tech leaders.</div>
+              <div class="internship-perk-sub">Dedicated weekly architectural guidance, code reviews, and career
+                coaching with veteran tech leaders.</div>
             </div>
           </div>
 
@@ -414,7 +485,8 @@
             <span class="internship-perk-icon">📜</span>
             <div>
               <div class="internship-perk-title">Verified LOR & Experience Credentials</div>
-              <div class="internship-perk-sub">Official institutional Letter of Recommendation and cryptographically verifiable experience credentials.</div>
+              <div class="internship-perk-sub">Official institutional Letter of Recommendation and cryptographically
+                verifiable experience credentials.</div>
             </div>
           </div>
 
@@ -422,7 +494,8 @@
             <span class="internship-perk-icon">🌐</span>
             <div>
               <div class="internship-perk-title">Academic-Friendly Hybrid & Remote</div>
-              <div class="internship-perk-sub">Flexible workflow hours specifically structured to seamlessly fit around university lectures and exams.</div>
+              <div class="internship-perk-sub">Flexible workflow hours specifically structured to seamlessly fit around
+                university lectures and exams.</div>
             </div>
           </div>
         </div>
@@ -494,35 +567,6 @@
       </div>
 
       <div class="faq-container">
-        <div class="faq-item glass-card" data-reveal>
-          <button type="button" class="faq-btn">
-            <span class="faq-q-text">What is the team size for CodeVerse 2.0?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-panel">
-            <p>
-              Teams can have <strong>2 to 5 members</strong> (1 Team Leader + 1 to 4 Members). You can participate as a
-              <strong>DUO (2 members)</strong>, <strong>TRIO (3 members)</strong>, <strong>QUARTET (4 members)</strong>,
-              or
-              <strong>QUINTET (5 members)</strong>.
-            </p>
-          </div>
-        </div>
-
-        <div class="faq-item glass-card" data-reveal>
-          <button type="button" class="faq-btn">
-            <span class="faq-q-text">Who is eligible to participate in CodeVerse 2.0?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-panel">
-            <p>
-              <strong>VIT Bhopal students:</strong> Open to <strong>all students and all batches</strong> of VIT Bhopal
-              (both day scholars and hostellers are eligible).<br>
-              <strong>Other colleges:</strong> Students from any recognized university or college across India are fully
-              welcome. Cross-departmental and inter-college squads are permitted.
-            </p>
-          </div>
-        </div>
 
         <div class="faq-item glass-card" data-reveal>
           <button type="button" class="faq-btn">
@@ -558,20 +602,6 @@
 
         <div class="faq-item glass-card" data-reveal>
           <button type="button" class="faq-btn">
-            <span class="faq-q-text">Are meals, overnight resting bays, and WiFi provided?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-panel">
-            <p>
-              Yes! <strong>Meals, food, and refreshments are provided for all participants</strong> during the offline
-              sprint, along with continuous high-speed campus WiFi, midnight coffee, resting pods, and dedicated power
-              sockets.
-            </p>
-          </div>
-        </div>
-
-        <div class="faq-item glass-card" data-reveal>
-          <button type="button" class="faq-btn">
             <span class="faq-q-text">Can we edit our team details or member roster after registering?</span>
             <span class="faq-icon">+</span>
           </button>
@@ -599,22 +629,6 @@
               <strong>Round 3 (29 November, Offline @ Audi 1 & 2, VIT Bhopal):</strong> Final Presentation Round. Live
               working
               prototype demo and pitch before expert industry judges, followed by grand awards.
-            </p>
-          </div>
-        </div>
-
-        <div class="faq-item glass-card" data-reveal>
-          <button type="button" class="faq-btn">
-            <span class="faq-q-text">What internships and perks are offered?</span>
-            <span class="faq-icon">+</span>
-          </button>
-          <div class="faq-panel">
-            <p>
-              • <strong>Grand Finale Winners:</strong> 25K Internship for winning teams, championship trophies, medals,
-              physical certificates, and exclusive goodies.<br>
-              • <strong>Offline Qualifiers:</strong> <strong>Paid internship opportunity for ALL teams that qualify for
-                the offline round!</strong><br>
-              • <strong>All Participants:</strong> Free goodies, meals & refreshments, and Alchemyst AI credits.
             </p>
           </div>
         </div>
@@ -881,17 +895,13 @@
         <p class="footer-sub">36-Hour National Flagship Hackathon • VIT Bhopal University</p>
       </div>
       <div class="footer-right">
-        <a href="#about" class="footer-link">About</a>
+        <a href="#rounds" class="footer-link">Rounds &amp; Perks</a>
         <span class="footer-sep">•</span>
-        <a href="#tracks" class="footer-link">Tracks</a>
-        <span class="footer-sep">•</span>
-        <a href="#rounds" class="footer-link">Rounds & Perks</a>
-        <span class="footer-sep">•</span>
-        <a href="#sponsors" class="footer-link">Partners</a>
+        <a href="#partners" class="footer-link">Partners</a>
         <span class="footer-sep">•</span>
         <a href="#faq" class="footer-link">FAQ</a>
         <span class="footer-sep">•</span>
-        <a href="#contact-section" class="footer-link">Contact</a>
+        <a href="#contact" class="footer-link">Contact</a>
       </div>
     </div>
     <div class="footer-bottom">
