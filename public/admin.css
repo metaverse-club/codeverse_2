@@ -550,9 +550,9 @@
 
 .modal-card {
   background: #0f121a;
-  border: 1px solid rgba(255, 107, 43, 0.25);
+  border: 1px solid rgba(139, 92, 246, 0.35);
   border-radius: var(--radius-lg, 16px);
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.95), 0 0 40px rgba(255, 85, 0, 0.15);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.95), 0 0 40px rgba(139, 92, 246, 0.25);
   width: 100%;
   max-width: 880px;
   max-height: 90vh;
@@ -612,7 +612,7 @@
 
 .modal-subtitle {
   font-size: 0.85rem;
-  color: var(--primary-light, #ff8533);
+  color: var(--primary-light, #38bdf8);
   display: block;
   margin-top: 2px;
 }

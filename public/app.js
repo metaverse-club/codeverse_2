@@ -1823,8 +1823,8 @@ function initParticleCanvas() {
       this.vy = (Math.random() - 0.5) * 0.6;
       this.radius = Math.random() * 2 + 1;
       this.baseAlpha = Math.random() * 0.5 + 0.2;
-      // Random copper / warm orange / soft gold hue
-      const colors = ['#ff5500', '#ff8534', '#ffa94d', '#ffb703', '#ffffff'];
+      // Random purplish-blue / electric violet / cyber cyan hue
+      const colors = ['#8b5cf6', '#a855f7', '#7c3aed', '#00f0ff', '#38bdf8', '#c084fc', '#ffffff'];
       this.color = colors[Math.floor(Math.random() * colors.length)];
     }
 
@@ -1854,7 +1854,7 @@ function initParticleCanvas() {
       ctx.fillStyle = this.color;
       ctx.globalAlpha = this.baseAlpha;
       ctx.shadowBlur = 8;
-      ctx.shadowColor = '#ff6b2b';
+      ctx.shadowColor = '#8b5cf6';
       ctx.fill();
     }
   }
@@ -1878,7 +1878,7 @@ function initParticleCanvas() {
           ctx.beginPath();
           ctx.moveTo(particles[i].x, particles[i].y);
           ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = '#ff6b2b';
+          ctx.strokeStyle = '#8b5cf6';
           ctx.globalAlpha = alpha;
           ctx.lineWidth = 0.8;
           ctx.shadowBlur = 0;
