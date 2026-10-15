@@ -866,6 +866,26 @@ img, svg, video, canvas {
   color: var(--text-secondary);
 }
 
+/* ================= ROUNDS & TIMELINE ================= */
+.rounds-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: stretch;
+  margin-bottom: 40px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+@media (max-width: 860px) {
+  .rounds-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
 /* ================= PRIZES SECTION ================= */
 .prizes-grid {
   display: grid;
@@ -3139,6 +3159,13 @@ img, svg, video, canvas {
   color: #fff;
   box-shadow: 0 4px 15px var(--copper-glow);
 }
+
+.lead-host-sponsor .sponsor-category {
+  background: linear-gradient(90deg, #6366f1, #ec4899);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
 
 .sponsor-card:hover .sponsor-category {
   top: -18px;

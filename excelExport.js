@@ -78,6 +78,12 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
     { key: 'm4Email', header: 'Member 4 College Email', width: 32, align: 'left', category: 'MEMBER 4', catBg: COLORS.MEMBER_BG },
     { key: 'm4Phone', header: 'Member 4 Phone Number', width: 22, align: 'center', category: 'MEMBER 4', catBg: COLORS.MEMBER_BG },
 
+    // Member 5
+    { key: 'm5Name', header: 'Member 5 Full Name', width: 26, align: 'left', category: 'MEMBER 5', catBg: COLORS.MEMBER_BG },
+    { key: 'm5RegNo', header: 'Member 5 Reg. No.', width: 22, align: 'center', category: 'MEMBER 5', catBg: COLORS.MEMBER_BG },
+    { key: 'm5Email', header: 'Member 5 College Email', width: 32, align: 'left', category: 'MEMBER 5', catBg: COLORS.MEMBER_BG },
+    { key: 'm5Phone', header: 'Member 5 Phone Number', width: 22, align: 'center', category: 'MEMBER 5', catBg: COLORS.MEMBER_BG },
+
     // Payment & Audit Section
     { key: 'paymentMethod', header: 'Payment Method', width: 18, align: 'center', category: 'PAYMENT AUDIT & VERIFICATION', catBg: COLORS.PAYMENT_BG },
     { key: 'utrNumber', header: 'Transaction / UTR Number', width: 24, align: 'center', category: 'PAYMENT AUDIT & VERIFICATION', catBg: COLORS.PAYMENT_BG },
@@ -192,6 +198,7 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
       const m2 = nonLeaderMembers[0] || {};
       const m3 = nonLeaderMembers[1] || {};
       const m4 = nonLeaderMembers[2] || {};
+      const m5 = nonLeaderMembers[3] || {};
 
       const payment = team.payment || {};
       const isEven = teamIdx % 2 === 1;
@@ -229,6 +236,12 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
         m4RegNo: m4.regNumber || m4.reg_number || '—',
         m4Email: m4.collegeEmail || m4.college_email || '—',
         m4Phone: m4.phone || '—',
+
+        // Member 5
+        m5Name: m5.fullName || m5.full_name || '—',
+        m5RegNo: m5.regNumber || m5.reg_number || '—',
+        m5Email: m5.collegeEmail || m5.college_email || '—',
+        m5Phone: m5.phone || '—',
 
         // Payment
         paymentMethod: payment.paymentMethod || payment.payment_method || '—',

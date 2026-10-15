@@ -891,13 +891,14 @@ function openAdminEditModal(team) {
   document.getElementById('edit-team-status').value = team.status || 'PENDING_VERIFICATION';
   document.getElementById('edit-project-title').value = team.projectTitle || '';
 
-  // Set members (4 members)
+  // Set members (2-5 members)
   const members = team.members || [];
   const m1 = members.find(m => m.isLeader) || members[0] || {};
   const nonLeaders = members.filter(m => !m.isLeader);
-  const m2 = nonLeaders[0] || members[1] || {};
-  const m3 = nonLeaders[1] || members[2] || {};
-  const m4 = nonLeaders[2] || members[3] || {};
+  const m2 = nonLeaders[0] || {};
+  const m3 = nonLeaders[1] || {};
+  const m4 = nonLeaders[2] || {};
+  const m5 = nonLeaders[3] || {};
 
   document.getElementById('edit-m1-name').value = m1.fullName || '';
   document.getElementById('edit-m1-reg').value = m1.regNumber || '';
@@ -919,10 +920,18 @@ function openAdminEditModal(team) {
   document.getElementById('edit-m4-email').value = m4.collegeEmail || '';
   document.getElementById('edit-m4-phone').value = m4.phone || '';
 
+  const m5NameEl = document.getElementById('edit-m5-name');
+  if (m5NameEl) {
+    m5NameEl.value = m5.fullName || '';
+    document.getElementById('edit-m5-reg').value = m5.regNumber || '';
+    document.getElementById('edit-m5-email').value = m5.collegeEmail || '';
+    document.getElementById('edit-m5-phone').value = m5.phone || '';
+  }
+
   // Set payment
   const p = team.payment || {};
   document.getElementById('edit-pay-utr').value = p.utrNumber || '';
-  document.getElementById('edit-pay-amount').value = p.amountPaid || 400;
+  document.getElementById('edit-pay-amount').value = p.amountPaid || 250;
   document.getElementById('edit-pay-method').value = p.paymentMethod || 'UPI';
   document.getElementById('edit-pay-notes').value = p.adminNotes || '';
 
@@ -947,44 +956,55 @@ async function handleAdminEditSubmit(e) {
     saveBtn.textContent = 'Saving Updates...';
   }
 
+  const rawMembers = [
+    {
+      fullName: document.getElementById('edit-m1-name').value.trim(),
+      regNumber: document.getElementById('edit-m1-reg').value.trim(),
+      collegeEmail: document.getElementById('edit-m1-email').value.trim(),
+      phone: document.getElementById('edit-m1-phone').value.trim(),
+      isLeader: true
+    },
+    {
+      fullName: document.getElementById('edit-m2-name').value.trim(),
+      regNumber: document.getElementById('edit-m2-reg').value.trim(),
+      collegeEmail: document.getElementById('edit-m2-email').value.trim(),
+      phone: document.getElementById('edit-m2-phone').value.trim(),
+      isLeader: false
+    },
+    {
+      fullName: document.getElementById('edit-m3-name')?.value.trim() || '',
+      regNumber: document.getElementById('edit-m3-reg')?.value.trim() || '',
+      collegeEmail: document.getElementById('edit-m3-email')?.value.trim() || '',
+      phone: document.getElementById('edit-m3-phone')?.value.trim() || '',
+      isLeader: false
+    },
+    {
+      fullName: document.getElementById('edit-m4-name')?.value.trim() || '',
+      regNumber: document.getElementById('edit-m4-reg')?.value.trim() || '',
+      collegeEmail: document.getElementById('edit-m4-email')?.value.trim() || '',
+      phone: document.getElementById('edit-m4-phone')?.value.trim() || '',
+      isLeader: false
+    },
+    {
+      fullName: document.getElementById('edit-m5-name')?.value.trim() || '',
+      regNumber: document.getElementById('edit-m5-reg')?.value.trim() || '',
+      collegeEmail: document.getElementById('edit-m5-email')?.value.trim() || '',
+      phone: document.getElementById('edit-m5-phone')?.value.trim() || '',
+      isLeader: false
+    }
+  ];
+
+  const activeMembers = rawMembers.filter((m, i) => i < 2 || (m.fullName && m.regNumber));
+
   const payload = {
     teamName: document.getElementById('edit-team-name').value.trim(),
     track: document.getElementById('edit-team-track').value,
     status: document.getElementById('edit-team-status').value,
     projectTitle: document.getElementById('edit-project-title').value.trim(),
-    members: [
-      {
-        fullName: document.getElementById('edit-m1-name').value.trim(),
-        regNumber: document.getElementById('edit-m1-reg').value.trim(),
-        collegeEmail: document.getElementById('edit-m1-email').value.trim(),
-        phone: document.getElementById('edit-m1-phone').value.trim(),
-        isLeader: true
-      },
-      {
-        fullName: document.getElementById('edit-m2-name').value.trim(),
-        regNumber: document.getElementById('edit-m2-reg').value.trim(),
-        collegeEmail: document.getElementById('edit-m2-email').value.trim(),
-        phone: document.getElementById('edit-m2-phone').value.trim(),
-        isLeader: false
-      },
-      {
-        fullName: document.getElementById('edit-m3-name').value.trim(),
-        regNumber: document.getElementById('edit-m3-reg').value.trim(),
-        collegeEmail: document.getElementById('edit-m3-email').value.trim(),
-        phone: document.getElementById('edit-m3-phone').value.trim(),
-        isLeader: false
-      },
-      {
-        fullName: document.getElementById('edit-m4-name').value.trim(),
-        regNumber: document.getElementById('edit-m4-reg').value.trim(),
-        collegeEmail: document.getElementById('edit-m4-email').value.trim(),
-        phone: document.getElementById('edit-m4-phone').value.trim(),
-        isLeader: false
-      }
-    ],
+    members: activeMembers,
     payment: {
       utrNumber: document.getElementById('edit-pay-utr').value.trim(),
-      amountPaid: Number(document.getElementById('edit-pay-amount').value) || 400,
+      amountPaid: Number(document.getElementById('edit-pay-amount').value) || 250,
       paymentMethod: document.getElementById('edit-pay-method').value,
       adminNotes: document.getElementById('edit-pay-notes').value.trim(),
       status: document.getElementById('edit-team-status').value

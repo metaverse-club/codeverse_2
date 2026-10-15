@@ -4,13 +4,30 @@
  */
 
 // Application State
+const PRICING_TIERS = {
+  2: { fee: 250, name: 'DUO' },
+  3: { fee: 330, name: 'TRIO' },
+  4: { fee: 400, name: 'QUARTET' },
+  5: { fee: 470, name: 'QUINTET' }
+};
+
+function calculateTeamFee(memberCount) {
+  const tier = PRICING_TIERS[memberCount];
+  return tier ? tier.fee : 250;
+}
+
+function getTierName(memberCount) {
+  const tier = PRICING_TIERS[memberCount];
+  return tier ? tier.name : 'DUO';
+}
+
 const state = {
   currentStep: 1,
   hackathonConfig: null,
   registeredTeam: null,
   teamDraft: {
     teamName: '',
-    track: 'AI & Intelligent Systems',
+    track: 'To be decided (Post-Vibecoding)',
     projectTitle: '',
     leader: {
       fullName: '',
@@ -18,11 +35,9 @@ const state = {
       collegeEmail: '',
       phone: ''
     },
-    // Starts with 3 additional members to make 4 total (1 leader + 3 members)
+    // Starts with 1 additional member to make 2 total (1 leader + 1 member = DUO tier)
     members: [
-      { id: 'mem_1', fullName: '', regNumber: '', collegeEmail: '', phone: '' },
-      { id: 'mem_2', fullName: '', regNumber: '', collegeEmail: '', phone: '' },
-      { id: 'mem_3', fullName: '', regNumber: '', collegeEmail: '', phone: '' }
+      { id: 'mem_1', fullName: '', regNumber: '', collegeEmail: '', phone: '' }
     ]
   },
   proofFile: null
@@ -205,17 +220,8 @@ async function fetchConfig() {
 }
 
 function applyConfigToUI(config) {
-  // Update Fee Displays
-  const feeText = `${config.currencySymbol || '₹'}${config.registrationFee}`;
-  const reviewFeeEl = document.getElementById('review-fee-amount');
-  const upiFeeEl = document.getElementById('upi-fee-text');
-  const upiAmountPill = document.getElementById('upi-amount-pill');
-  const payAmountInput = document.getElementById('pay-amount');
-
-  if (reviewFeeEl) reviewFeeEl.textContent = feeText;
-  if (upiFeeEl) upiFeeEl.textContent = feeText;
-  if (upiAmountPill) upiAmountPill.textContent = feeText;
-  if (payAmountInput) payAmountInput.value = config.registrationFee;
+  // Update Fee Displays dynamically based on members
+  updateDynamicFeeUI();
 
   // Apply UPI details
   if (config.upiDetails) {
@@ -498,11 +504,11 @@ function bindEvents() {
   document.getElementById('btn-lookup-edit')?.addEventListener('click', handleLookupEdit);
   document.getElementById('btn-edit-add-member')?.addEventListener('click', addEditMemberCard);
   document.getElementById('btn-edit-remove-member')?.addEventListener('click', () => {
-    if (editState.members.length > 3) {
+    if (editState.members.length > 1) {
       editState.members.pop();
       renderEditMembers();
     } else {
-      showToast('A team must have at least 4 members (1 leader + 3 members).', 'warning');
+      showToast('A team must have at least 2 members (1 leader + 1 member).', 'warning');
     }
   });
   document.getElementById('form-edit-team')?.addEventListener('submit', handleSaveTeamEdit);
@@ -543,8 +549,10 @@ let isLeaderEmailVerified = false;
  */
 function handleStep1Next() {
   const teamName = document.getElementById('team-name').value.trim();
-  const track = document.getElementById('team-track').value;
-  const projectTitle = document.getElementById('project-title').value.trim();
+  const trackEl = document.getElementById('team-track');
+  const projectTitleEl = document.getElementById('project-title');
+  const track = trackEl ? trackEl.value : 'To be decided (Post-Vibecoding)';
+  const projectTitle = projectTitleEl ? projectTitleEl.value.trim() : '';
 
   const leaderName = document.getElementById('leader-name').value.trim();
   const leaderReg = document.getElementById('leader-reg').value.trim();
@@ -610,7 +618,7 @@ function handleStep1Next() {
 }
 
 /**
- * Step 2 Navigation & Dynamic Members Management
+ * Step 2 Navigation & Dynamic Members Management (2 to 5 members)
  */
 function renderMembers() {
   const container = document.getElementById('dynamic-members-container');
@@ -624,9 +632,9 @@ function renderMembers() {
     card.className = 'member-card';
     card.id = `member-card-${member.id}`;
 
-    // Can remove only if total members (1 leader + members.length) > 4
+    // Can remove only if total members (1 leader + members.length) > 2
     const totalCount = 1 + state.teamDraft.members.length;
-    const canRemove = totalCount > 4;
+    const canRemove = totalCount > 2;
 
     card.innerHTML = `
       <div class="member-card-top">
@@ -638,7 +646,7 @@ function renderMembers() {
             🗑️ Remove
           </button>
         ` : `
-          <span class="input-hint" title="Minimum 4 members required">Mandatory (Min 4)</span>
+          <span class="input-hint" title="Minimum 2 members required">Mandatory (Min 2)</span>
         `}
       </div>
 
@@ -693,8 +701,8 @@ function renderMembers() {
 
 function addMemberCard() {
   const totalCount = 1 + state.teamDraft.members.length;
-  if (totalCount >= 6) {
-    showToast('Maximum team size is 6 members.', 'warning');
+  if (totalCount >= 5) {
+    showToast('Maximum team size is 5 members (QUINTET).', 'warning');
     return;
   }
 
@@ -708,23 +716,25 @@ function addMemberCard() {
   });
 
   renderMembers();
-  showToast(`Member ${totalCount + 1} added.`, 'info');
+  const newTotal = 1 + state.teamDraft.members.length;
+  showToast(`Member ${newTotal} added (${getTierName(newTotal)} tier: ₹${calculateTeamFee(newTotal)}).`, 'info');
 }
 
 function removeMemberCard(memberId) {
   const totalCount = 1 + state.teamDraft.members.length;
-  if (totalCount <= 4) {
-    showToast('Minimum team size is 4 members. Cannot remove further.', 'warning');
+  if (totalCount <= 2) {
+    showToast('Minimum team size is 2 members (DUO). Cannot remove further.', 'warning');
     return;
   }
 
   state.teamDraft.members = state.teamDraft.members.filter(m => m.id !== memberId);
   renderMembers();
-  showToast('Member removed.', 'info');
+  const newTotal = 1 + state.teamDraft.members.length;
+  showToast(`Member removed (${getTierName(newTotal)} tier: ₹${calculateTeamFee(newTotal)}).`, 'info');
 }
 
 function updateMemberCounter() {
-  const totalMembers = 1 + state.teamDraft.members.length; // 1 leader + 3 members = 4
+  const totalMembers = 1 + state.teamDraft.members.length;
   const addBtn = document.getElementById('btn-add-member');
   const countBadge = document.getElementById('member-count-badge');
   const totalCountEl = document.getElementById('total-members-count');
@@ -732,27 +742,62 @@ function updateMemberCounter() {
   const slotsRemainingEl = document.getElementById('slots-remaining');
   const ruleHintEl = document.getElementById('member-rule-hint');
 
-  if (totalCountEl) totalCountEl.textContent = '4';
-  if (addCountEl) addCountEl.textContent = '3';
-  if (slotsRemainingEl) slotsRemainingEl.textContent = '0';
+  const slotsLeft = Math.max(0, 5 - totalMembers);
+  const tierName = getTierName(totalMembers);
+  const fee = calculateTeamFee(totalMembers);
 
-  if (totalMembers === 4) {
+  if (totalCountEl) totalCountEl.textContent = totalMembers;
+  if (addCountEl) addCountEl.textContent = state.teamDraft.members.length;
+  if (slotsRemainingEl) slotsRemainingEl.textContent = slotsLeft;
+
+  if (totalMembers >= 2 && totalMembers <= 5) {
     countBadge?.classList.add('valid');
     if (ruleHintEl) {
-      ruleHintEl.textContent = '✓ Fixed Team Size: Exactly 4 Members (1 Leader + 3 Members)';
+      ruleHintEl.textContent = `✓ ${tierName} Tier (${totalMembers} members) • Fee: ₹${fee}`;
       ruleHintEl.classList.remove('invalid');
+    }
+  } else {
+    countBadge?.classList.remove('valid');
+    if (ruleHintEl) {
+      ruleHintEl.textContent = 'Team size must be between 2 and 5 members';
+      ruleHintEl.classList.add('invalid');
     }
   }
 
   if (addBtn) {
-    addBtn.style.display = 'none'; // Fixed to 4 members
+    addBtn.style.display = totalMembers >= 5 ? 'none' : 'inline-flex';
   }
+
+  updateDynamicFeeUI();
+}
+
+function updateDynamicFeeUI() {
+  const totalMembers = 1 + (state.teamDraft?.members?.length || 1);
+  const fee = calculateTeamFee(totalMembers);
+  const tierName = getTierName(totalMembers);
+  const feeText = `₹${fee}`;
+
+  const reviewFeeEl = document.getElementById('review-fee-amount');
+  const reviewTierBadge = document.getElementById('review-tier-badge');
+  const reviewFeeMembersText = document.getElementById('review-fee-members-text');
+  const upiFeeEl = document.getElementById('upi-fee-text');
+  const upiTierBadge = document.getElementById('upi-tier-badge');
+  const upiAmountPill = document.getElementById('upi-amount-pill');
+  const payAmountInput = document.getElementById('pay-amount');
+
+  if (reviewFeeEl) reviewFeeEl.textContent = feeText;
+  if (reviewTierBadge) reviewTierBadge.textContent = tierName;
+  if (reviewFeeMembersText) reviewFeeMembersText.textContent = `${totalMembers} members`;
+  if (upiFeeEl) upiFeeEl.textContent = feeText;
+  if (upiTierBadge) upiTierBadge.textContent = `${tierName} Tier`;
+  if (upiAmountPill) upiAmountPill.textContent = feeText;
+  if (payAmountInput) payAmountInput.value = fee;
 }
 
 function handleStep2Next() {
   const totalMembers = 1 + state.teamDraft.members.length;
-  if (totalMembers !== 4) {
-    showToast(`Team must have exactly 4 members (1 leader + 3 members). Current: ${totalMembers}.`, 'error');
+  if (totalMembers < 2 || totalMembers > 5) {
+    showToast(`Team must have between 2 and 5 members. Current: ${totalMembers}.`, 'error');
     return;
   }
 
@@ -1415,7 +1460,7 @@ function renderEditMembers() {
     card.className = 'member-card';
     card.id = `edit-card-${member.id}`;
 
-    const canRemove = totalCount > 4;
+    const canRemove = totalCount > 2;
 
     card.innerHTML = `
       <div class="member-card-top">
@@ -1427,7 +1472,7 @@ function renderEditMembers() {
             🗑️ Remove
           </button>
         ` : `
-          <span class="input-hint" title="Minimum 4 members required">Mandatory (Min 4)</span>
+          <span class="input-hint" title="Minimum 2 members required">Mandatory (Min 2)</span>
         `}
       </div>
 
@@ -1477,21 +1522,21 @@ function renderEditMembers() {
     });
   });
 
-  // Update remaining slots and button state
-  const slotsRemaining = 6 - totalCount;
+  // Update remaining slots and button state (2-5 members)
+  const slotsRemaining = 5 - totalCount;
   const slotsEl = document.getElementById('edit-slots-remaining');
   if (slotsEl) slotsEl.textContent = Math.max(0, slotsRemaining);
 
   const addBtn = document.getElementById('btn-edit-add-member');
   if (addBtn) {
-    addBtn.disabled = totalCount >= 6;
+    addBtn.disabled = totalCount >= 5;
   }
 }
 
 function addEditMemberCard() {
   const totalCount = 1 + editState.members.length;
-  if (totalCount >= 6) {
-    showToast('Maximum team size is 6 members.', 'warning');
+  if (totalCount >= 5) {
+    showToast('Maximum team size is 5 members.', 'warning');
     return;
   }
 
@@ -1510,8 +1555,8 @@ function addEditMemberCard() {
 
 function removeEditMemberCard(memberId) {
   const totalCount = 1 + editState.members.length;
-  if (totalCount <= 4) {
-    showToast('Minimum team size is 4 members. Cannot remove further.', 'warning');
+  if (totalCount <= 2) {
+    showToast('Minimum team size is 2 members. Cannot remove further.', 'warning');
     return;
   }
 
@@ -1561,10 +1606,10 @@ async function handleSaveTeamEdit(e) {
     return;
   }
 
-  // 2. Validate member count
+  // 2. Validate member count (2 to 5 members)
   const totalMembersCount = 1 + editState.members.length;
-  if (totalMembersCount !== 4) {
-    showToast(`Team must have exactly 4 members (1 Leader + 3 Members). Currently ${totalMembersCount}.`, 'warning');
+  if (totalMembersCount < 2 || totalMembersCount > 5) {
+    showToast(`Team must have between 2 and 5 members (1 Leader + 1 to 4 Members). Currently ${totalMembersCount}.`, 'warning');
     return;
   }
 

@@ -57,11 +57,23 @@ app.get('/admin', (req, res) => {
 const HACKATHON_CONFIG = {
   eventName: "CodeVerse Hackathon 2026",
   tagline: "Innovate • Collaborate • Build the Future",
-  registrationFee: 400, // INR per team (4 members)
+  registrationFee: 250, // Base fee (Duo: 250, Trio: 330, Quartet: 400, Quintet: 470)
+  pricingTiers: {
+    2: 250, // DUO
+    3: 330, // TRIO
+    4: 400, // QUARTET
+    5: 470  // QUINTET
+  },
+  pricingDetails: [
+    { tier: "DUO", size: 2, fee: 250 },
+    { tier: "TRIO", size: 3, fee: 330 },
+    { tier: "QUARTET", size: 4, fee: 400 },
+    { tier: "QUINTET", size: 5, fee: 470 }
+  ],
   currency: "INR",
   currencySymbol: "₹",
-  minTeamSize: 4,
-  maxTeamSize: 4,
+  minTeamSize: 2,
+  maxTeamSize: 5,
   tracks: [
     "AI & Intelligent Systems",
     "Web3, DeFi & Decentralized Apps",
@@ -284,10 +296,10 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Team name is required.' });
     }
 
-    if (!Array.isArray(members) || members.length !== 4) {
+    if (!Array.isArray(members) || members.length < 2 || members.length > 5) {
       return res.status(400).json({
         success: false,
-        error: `Invalid team size (${members ? members.length : 0}). Team must have exactly 4 members.`
+        error: `Invalid team size (${members ? members.length : 0}). Team must have between 2 and 5 members (Duo: 2, Trio: 3, Quartet: 4, Quintet: 5).`
       });
     }
 
