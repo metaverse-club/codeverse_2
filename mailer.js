@@ -1,13 +1,63 @@
 require('dotenv').config();
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+function createTransporter(port = 465, secure = true) {
+  return nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port,
+    secure,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    },
+    tls: {
+      rejectUnauthorized: false
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000
+  });
+}
+
+async function sendMailWithFallback(mailOptions) {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    const err = 'EMAIL_USER and/or EMAIL_PASS environment variables are not configured in the deployment dashboard.';
+    console.error('[MAILER ERROR]', err);
+    return { success: false, error: err };
   }
-});
+
+  // Attempt 1: Port 465 (Direct SSL)
+  try {
+    const t465 = createTransporter(465, true);
+    await t465.sendMail(mailOptions);
+    return { success: true };
+  } catch (err465) {
+    console.warn('[MAILER] Port 465 SSL failed, trying fallback Port 587 TLS:', err465.message);
+    // Attempt 2: Port 587 (Explicit TLS)
+    try {
+      const t587 = createTransporter(587, false);
+      await t587.sendMail(mailOptions);
+      return { success: true };
+    } catch (err587) {
+      console.warn('[MAILER] Port 587 TLS failed, trying service: "gmail":', err587.message);
+      // Attempt 3: service: 'gmail' default
+      try {
+        const tService = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
+        await tService.sendMail(mailOptions);
+        return { success: true };
+      } catch (errService) {
+        console.error('[MAILER] All email transport methods failed:', errService.message);
+        return { success: false, error: errService.message };
+      }
+    }
+  }
+}
 
 async function sendViaAppsScript(to, subject, html) {
   try {
@@ -66,7 +116,8 @@ async function sendOTPEmail(toEmail, otp) {
   `;
 
   if (process.env.GOOGLE_SCRIPT_URL) {
-    return await sendViaAppsScript(toEmail, subject, html);
+    const appsScriptResult = await sendViaAppsScript(toEmail, subject, html);
+    if (appsScriptResult) return { success: true };
   }
 
   const mailOptions = {
@@ -76,13 +127,7 @@ async function sendOTPEmail(toEmail, otp) {
     html
   };
 
-  try {
-    await transporter.sendMail(mailOptions);
-    return true;
-  } catch (error) {
-    console.error('Error sending OTP email:', error);
-    return false;
-  }
+  return await sendMailWithFallback(mailOptions);
 }
 
 async function sendStatusEmail(toEmail, teamName, status, reason = '') {
@@ -124,7 +169,8 @@ async function sendStatusEmail(toEmail, teamName, status, reason = '') {
   `;
 
   if (process.env.GOOGLE_SCRIPT_URL) {
-    return await sendViaAppsScript(toEmail, subject, html);
+    const appsScriptResult = await sendViaAppsScript(toEmail, subject, html);
+    if (appsScriptResult) return true;
   }
 
   const mailOptions = {
@@ -134,13 +180,8 @@ async function sendStatusEmail(toEmail, teamName, status, reason = '') {
     html
   };
 
-  try {
-    await transporter.sendMail(mailOptions);
-    return true;
-  } catch (error) {
-    console.error('Error sending status email:', error);
-    return false;
-  }
+  const res = await sendMailWithFallback(mailOptions);
+  return res.success;
 }
 
 module.exports = {

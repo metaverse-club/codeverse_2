@@ -220,20 +220,34 @@ app.post('/api/send-otp', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Email is required.' });
     }
 
+    if (!process.env.GOOGLE_SCRIPT_URL && (!process.env.EMAIL_USER || !process.env.EMAIL_PASS)) {
+      console.error('[OTP ERROR] EMAIL_USER or EMAIL_PASS environment variable is missing in server environment.');
+      return res.status(500).json({
+        success: false,
+        error: 'Email configuration missing on server. Please add EMAIL_USER and EMAIL_PASS environment variables in your deployment dashboard.'
+      });
+    }
+
     // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     otpStore.set(email.trim().toLowerCase(), { otp, expiresAt });
 
-    const emailSent = await sendOTPEmail(email.trim().toLowerCase(), otp);
-    
-    if (emailSent) {
+    const emailResult = await sendOTPEmail(email.trim().toLowerCase(), otp);
+    const isSuccess = typeof emailResult === 'object' ? emailResult.success : !!emailResult;
+
+    if (isSuccess) {
       res.json({ success: true, message: 'OTP sent successfully to ' + email });
     } else {
-      res.status(500).json({ success: false, error: 'Failed to send OTP email. Check server configuration.' });
+      const errMsg = (typeof emailResult === 'object' && emailResult.error)
+        ? emailResult.error
+        : 'Failed to send OTP email. Please ensure EMAIL_USER and EMAIL_PASS are set in your deployment environment.';
+      console.error('[SEND-OTP FAILED]:', errMsg);
+      res.status(500).json({ success: false, error: `Failed to send OTP: ${errMsg}` });
     }
   } catch (err) {
+    console.error('[SEND-OTP EXCEPTION]:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

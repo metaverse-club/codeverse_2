@@ -284,7 +284,7 @@ function applyConfigToUI(config) {
           If you have already registered, you can still check your registration status or edit your team details (if the edit window is open).
         </p>
         <p style="margin-top:15px; color:var(--text-muted); font-size:0.85rem;">
-          For any queries, contact: <strong style="color:var(--text-main);">+91 99563 61794</strong>
+          For any queries, contact: <strong style="color:var(--text-main);">Anzal Khan (+91 99563 61794)</strong>, <strong style="color:var(--text-main);">Aniket (+91 83058 01086)</strong>, or <strong style="color:var(--text-main);">Trisha Kapoor (+91 70113 49889)</strong>
         </p>
       `;
       actionsContainer.appendChild(closedMsg);
