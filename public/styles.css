@@ -275,18 +275,32 @@ img, svg, video, canvas {
 }
 
 .brand-logo-badge {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: var(--radius-md);
-  background: var(--grad-copper);
+  background: #050508;
+  border: 1px solid rgba(0, 243, 255, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.15rem;
-  color: #0a0a0c;
-  box-shadow: 0 4px 16px var(--copper-glow);
+  overflow: hidden;
+  box-shadow: 0 0 16px rgba(0, 243, 255, 0.25);
+  transition: all var(--trans-base);
+  flex-shrink: 0;
+}
+
+.brand-logo-badge:hover,
+.nav-brand:hover .brand-logo-badge {
+  border-color: rgba(0, 243, 255, 0.7);
+  box-shadow: 0 0 24px rgba(0, 243, 255, 0.5);
+  transform: scale(1.05);
+}
+
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .brand-text-block {
@@ -2723,9 +2737,8 @@ img, svg, video, canvas {
   }
   
   .brand-logo-badge {
-    width: 34px;
-    height: 34px;
-    font-size: 0.95rem;
+    width: 36px;
+    height: 36px;
   }
   
   .brand-title {
