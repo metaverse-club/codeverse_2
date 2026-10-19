@@ -1007,32 +1007,111 @@ function handleStep2Next() {
 }
 
 /**
+ * Syncs teamDraft state from the DOM inputs and updates Step 2 leader preview
+ */
+function syncDraftFromDOM() {
+  if (!state.teamDraft) return;
+
+  // Step 1 Team & Leader sync
+  const teamNameInput = document.getElementById('team-name');
+  if (teamNameInput && teamNameInput.value.trim()) {
+    state.teamDraft.teamName = teamNameInput.value.trim();
+  }
+
+  if (!state.teamDraft.leader) {
+    state.teamDraft.leader = { fullName: '', regNumber: '', collegeEmail: '', phone: '' };
+  }
+  const lNameInput = document.getElementById('leader-name');
+  const lRegInput = document.getElementById('leader-reg');
+  const lEmailInput = document.getElementById('leader-email');
+  const lPhoneInput = document.getElementById('leader-phone');
+  if (lNameInput && lNameInput.value.trim()) state.teamDraft.leader.fullName = lNameInput.value.trim();
+  if (lRegInput && lRegInput.value.trim()) state.teamDraft.leader.regNumber = lRegInput.value.trim().toUpperCase();
+  if (lEmailInput && lEmailInput.value.trim()) state.teamDraft.leader.collegeEmail = lEmailInput.value.trim();
+  if (lPhoneInput && lPhoneInput.value.trim()) state.teamDraft.leader.phone = lPhoneInput.value.trim();
+
+  // Step 2 Members sync
+  const container = document.getElementById('dynamic-members-container');
+  if (container) {
+    container.querySelectorAll('.member-card').forEach(card => {
+      const id = card.id ? card.id.replace('card-', '') : '';
+      const mem = state.teamDraft.members.find(m => m.id === id);
+      if (mem) {
+        const nameInput = card.querySelector('[data-key="fullName"]');
+        const regInput = card.querySelector('[data-key="regNumber"]');
+        const emailInput = card.querySelector('[data-key="collegeEmail"]');
+        const phoneInput = card.querySelector('[data-key="phone"]');
+        if (nameInput && nameInput.value.trim()) mem.fullName = nameInput.value.trim();
+        if (regInput && regInput.value.trim()) mem.regNumber = regInput.value.trim().toUpperCase();
+        if (emailInput && emailInput.value.trim()) mem.collegeEmail = emailInput.value.trim();
+        if (phoneInput && phoneInput.value.trim()) mem.phone = phoneInput.value.trim();
+      }
+    });
+  }
+
+  // Update Leader Preview in Step 2
+  const leader = state.teamDraft.leader;
+  if (leader) {
+    const pName = document.getElementById('leader-preview-name');
+    const pReg = document.getElementById('leader-preview-reg');
+    const pEmail = document.getElementById('leader-preview-email');
+    const pPhone = document.getElementById('leader-preview-phone');
+    if (pName && leader.fullName) pName.textContent = leader.fullName;
+    if (pReg && leader.regNumber) pReg.textContent = `Reg: ${leader.regNumber}`;
+    if (pEmail && leader.collegeEmail) pEmail.textContent = `Email: ${leader.collegeEmail}`;
+    if (pPhone && leader.phone) pPhone.textContent = `Phone: ${leader.phone}`;
+  }
+}
+
+/**
  * Step 3: Populate Review Summary
  */
 function populateReviewStep() {
-  document.getElementById('review-team-name').textContent = state.teamDraft.teamName;
-  document.getElementById('review-team-track').textContent = state.teamDraft.track;
+  syncDraftFromDOM();
+
+  const teamNameEl = document.getElementById('review-team-name');
+  if (teamNameEl) teamNameEl.textContent = state.teamDraft.teamName || '-';
+
+  const trackEl = document.getElementById('review-team-track');
+  if (trackEl) trackEl.textContent = state.teamDraft.track || 'To be selected post-Vibecoding round';
 
   const totalMembers = 1 + state.teamDraft.members.length;
-  document.getElementById('review-roster-count').textContent = totalMembers;
+  const rosterCountEl = document.getElementById('review-roster-count');
+  if (rosterCountEl) rosterCountEl.textContent = totalMembers;
 
   const tbody = document.getElementById('review-roster-tbody');
-  if (!tbody) return;
+  if (tbody) {
+    const leader = state.teamDraft.leader || {};
+    const allMembers = [
+      {
+        role: '👑 Team Leader',
+        fullName: leader.fullName || '-',
+        regNumber: leader.regNumber || '-',
+        collegeEmail: leader.collegeEmail || '-',
+        phone: leader.phone || '-'
+      },
+      ...state.teamDraft.members.map((m, idx) => ({
+        role: `Member ${idx + 2}`,
+        fullName: m.fullName || '-',
+        regNumber: m.regNumber || '-',
+        collegeEmail: m.collegeEmail || '-',
+        phone: m.phone || '-'
+      }))
+    ];
 
-  const allMembers = [
-    { ...state.teamDraft.leader, role: '👑 Team Leader' },
-    ...state.teamDraft.members.map((m, idx) => ({ ...m, role: `Member ${idx + 2}` }))
-  ];
+    tbody.innerHTML = allMembers.map(m => `
+      <tr>
+        <td><strong>${m.role}</strong></td>
+        <td>${escapeHtml(m.fullName)}</td>
+        <td class="monospace">${escapeHtml(m.regNumber)}</td>
+        <td>${escapeHtml(m.collegeEmail)}</td>
+        <td class="monospace">${escapeHtml(m.phone)}</td>
+      </tr>
+    `).join('');
+  }
 
-  tbody.innerHTML = allMembers.map(m => `
-    <tr>
-      <td><strong>${m.role}</strong></td>
-      <td>${escapeHtml(m.fullName)}</td>
-      <td class="monospace">${escapeHtml(m.regNumber)}</td>
-      <td>${escapeHtml(m.collegeEmail)}</td>
-      <td class="monospace">${escapeHtml(m.phone)}</td>
-    </tr>
-  `).join('');
+  // Update dynamic fees
+  updateDynamicFeeUI();
 
   // Reset confirmation checkbox
   const chk = document.getElementById('review-confirm-checkbox');
@@ -1050,6 +1129,56 @@ async function handleConfirmAndProceedToPayment() {
   btn.innerHTML = `<span class="qr-spinner">Reserving Registration...</span>`;
 
   try {
+    syncDraftFromDOM();
+
+    // If team is already registered / reserved in DB (resumed session)
+    const existingRegId = state.registeredTeam?.registrationId || state.registeredTeam?.registration_id;
+    if (existingRegId) {
+      // Save any updated details via /api/team/update
+      try {
+        await fetch('/api/team/update', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            registrationId: existingRegId,
+            teamName: state.teamDraft.teamName,
+            track: state.teamDraft.track,
+            projectTitle: state.teamDraft.projectTitle,
+            members: [
+              {
+                fullName: state.teamDraft.leader.fullName,
+                regNumber: state.teamDraft.leader.regNumber,
+                collegeEmail: state.teamDraft.leader.collegeEmail,
+                phone: state.teamDraft.leader.phone,
+                isLeader: true
+              },
+              ...state.teamDraft.members.map(m => ({
+                fullName: m.fullName,
+                regNumber: m.regNumber,
+                collegeEmail: m.collegeEmail,
+                phone: m.phone,
+                isLeader: false
+              }))
+            ]
+          })
+        });
+      } catch (updateErr) {
+        console.warn('Could not auto-update team details, continuing to payment:', updateErr);
+      }
+
+      const regIdDisplay = document.getElementById('payment-reg-id-display');
+      if (regIdDisplay) regIdDisplay.textContent = existingRegId;
+
+      const remarkHint = document.getElementById('upi-team-remark-hint');
+      if (remarkHint) remarkHint.textContent = `${state.teamDraft.teamName} (${existingRegId})`;
+
+      updateDynamicFeeUI();
+      goToStep(4);
+      btn.disabled = false;
+      btn.innerHTML = `Proceed to Payment <span class="btn-arrow">→</span>`;
+      return;
+    }
+
     const payload = {
       teamName: state.teamDraft.teamName,
       track: state.teamDraft.track,
@@ -1338,6 +1467,12 @@ function goToStep(stepNumber) {
   state.currentStep = stepNumber;
   setTimeout(saveSessionState, 10);
 
+  if (stepNumber === 2) {
+    syncDraftFromDOM();
+  } else if (stepNumber === 3) {
+    populateReviewStep();
+  }
+
   // Update Wizard Steps Visibility
   document.querySelectorAll('.wizard-step').forEach(step => {
     step.classList.remove('active');
@@ -1607,6 +1742,16 @@ async function handleResumeRegistration(identifier) {
       }
       if (lPhoneInput) lPhoneInput.value = leader.phone;
       if (tNameInput) tNameInput.value = team.teamName;
+
+      // Update Leader Preview in Step 2
+      const pName = document.getElementById('leader-preview-name');
+      const pReg = document.getElementById('leader-preview-reg');
+      const pEmail = document.getElementById('leader-preview-email');
+      const pPhone = document.getElementById('leader-preview-phone');
+      if (pName) pName.textContent = leader.fullName;
+      if (pReg) pReg.textContent = `Reg: ${leader.regNumber}`;
+      if (pEmail) pEmail.textContent = `Email: ${leader.collegeEmail}`;
+      if (pPhone) pPhone.textContent = `Phone: ${leader.phone}`;
     }
 
     const otherMembers = (team.members || []).filter(m => !m.isLeader);
@@ -1620,6 +1765,7 @@ async function handleResumeRegistration(identifier) {
 
     renderMembers();
     updateMemberCounter();
+    populateReviewStep();
 
     // Save to local storage for persistent resume
     try {
