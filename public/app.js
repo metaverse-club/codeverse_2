@@ -358,8 +358,17 @@ function initOTPLogic() {
                 </button>
               </div>
             `;
-            document.getElementById('btn-inline-resume-pay')?.addEventListener('click', () => {
-              handleResumeRegistration(data.pendingTeam.registrationId);
+            document.getElementById('btn-inline-resume-pay')?.addEventListener('click', async (e) => {
+              e.preventDefault();
+              const btn = e.currentTarget;
+              btn.disabled = true;
+              btn.textContent = 'Redirecting to Payment...';
+              try {
+                await handleResumeRegistration(data.pendingTeam.registrationId);
+              } finally {
+                btn.disabled = false;
+                btn.textContent = 'Continue to Payment →';
+              }
             });
           } else {
             noticeEl.style.display = 'none';
@@ -1354,8 +1363,9 @@ function goToStep(stepNumber) {
     line.classList.toggle('completed', index < stepNumber - 1);
   });
 
-  // Scroll smoothly to wizard top
-  document.getElementById('register')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Scroll smoothly to wizard step
+  const targetEl = document.getElementById(`step-${stepNumber}`) || document.getElementById('register-wizard-container') || document.getElementById('register');
+  targetEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /**
@@ -1631,7 +1641,7 @@ async function handleResumeRegistration(identifier) {
     const remarkHint = document.getElementById('upi-team-remark-hint');
     if (remarkHint) remarkHint.textContent = `${team.teamName} (${team.registrationId})`;
 
-    updatePricingDisplay();
+    updateDynamicFeeUI();
 
     // Bypass instructions gate & show wizard container
     const instructionsGate = document.getElementById('instructions-gate');
@@ -1643,11 +1653,11 @@ async function handleResumeRegistration(identifier) {
     goToStep(4);
     showToast(`Registration resumed! Welcome back, Team ${team.teamName}. Please complete your payment below.`, 'success');
   } catch (err) {
+    console.error('Error resuming registration:', err);
+    showToast(err.message, 'error');
     if (errorMsg) {
       errorMsg.textContent = err.message;
       errorMsg.style.display = 'block';
-    } else {
-      showToast(err.message, 'error');
     }
   } finally {
     if (resumeBtn) {
