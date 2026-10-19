@@ -91,6 +91,25 @@
     </div>
   </header>
 
+  <!-- Persistent Incomplete Registration Alert Banner -->
+  <div id="pending-reg-banner" class="pending-reg-banner" style="display: none;">
+    <div class="container pending-banner-container">
+      <div class="pending-banner-left">
+        <span class="pending-banner-badge">⚡ PENDING PAYMENT</span>
+        <span class="pending-banner-text">
+          Incomplete registration found for squad <strong id="pending-banner-team-name">Squad</strong> 
+          (<code id="pending-banner-reg-id">CV26-TM-XXXX</code>). Your squad credentials are confirmed!
+        </span>
+      </div>
+      <div class="pending-banner-right">
+        <button type="button" class="btn btn-sm btn-primary" id="btn-banner-resume">
+          Continue Registration →
+        </button>
+        <button type="button" class="btn-banner-dismiss" id="btn-banner-dismiss" title="Dismiss banner">✕</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Registration Header Banner -->
   <section class="section register-header-section" id="register-header-banner">
     <div class="container">
@@ -168,6 +187,12 @@
             <span class="btn-text">Proceed to Registration Form</span>
             <span class="btn-arrow">→</span>
           </button>
+          <div class="resume-reg-prompt" style="margin-top: 10px; text-align: center;">
+            <span style="color: var(--text-muted); font-size: 0.9rem;">Already entered your squad details and need to finish payment?</span>
+            <button type="button" class="btn-link-action" id="btn-open-resume-modal" style="margin-left: 8px; color: #818cf8; background: none; border: none; cursor: pointer; text-decoration: underline; font-weight: 600; font-size: 0.95rem;">
+              Continue Registration / Pay Later →
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -335,6 +360,9 @@
                   <span class="input-hint" id="otp-status-msg"
                     style="margin-top: 8px; display: block; color: var(--accent-1);"></span>
                 </div>
+
+                <!-- Inline Pending Registration Alert -->
+                <div id="step1-pending-notice" class="step1-pending-notice" style="display: none; margin-top: 12px;"></div>
               </div>
 
               <div class="form-group">
@@ -647,13 +675,18 @@
           </div>
         </div>
 
-        <div class="form-actions">
+        <div class="form-actions" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <button type="button" class="btn btn-secondary btn-back" id="btn-back-to-step-3">
             <span class="btn-arrow">←</span> Back to Review
           </button>
-          <button type="button" class="btn btn-primary btn-next" id="btn-goto-step-5">
-            I Have Paid → Submit Transaction Details <span class="btn-arrow">→</span>
-          </button>
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn btn-outline" id="btn-pay-later" style="border-color: rgba(245, 158, 11, 0.5); color: #fbbf24;">
+              💾 Pay Later & Save Link
+            </button>
+            <button type="button" class="btn btn-primary btn-next" id="btn-goto-step-5">
+              I Have Paid → Submit Transaction Details <span class="btn-arrow">→</span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -1021,6 +1054,71 @@
     </div>
   </div>
 
+  <!-- ================= RESUME REGISTRATION MODAL ================= -->
+  <div class="modal-overlay hidden" id="resume-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">⚡ Continue Incomplete Registration</h3>
+          <span class="modal-subtitle">Pick up right where you left off & complete your payment</span>
+        </div>
+        <button type="button" class="modal-close" id="modal-resume-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          If you already confirmed your squad details and paused at the payment step, enter your 
+          <strong>Registration ID</strong> (e.g. <code>CV26-TM-48291</code>) or your <strong>Team Leader College Email</strong>:
+        </p>
+        <div class="track-input-group">
+          <input type="text" id="resume-search-input" class="form-input" placeholder="CV26-TM-XXXXX or leader@college.edu">
+          <button type="button" class="btn btn-primary" id="btn-lookup-resume">Find & Continue</button>
+        </div>
+        <div id="resume-error-msg" class="form-error-msg" style="margin-top: 12px; display: none; color: #ef4444; font-size: 0.9rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= PAY LATER SUCCESS MODAL ================= -->
+  <div class="modal-overlay hidden" id="pay-later-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">💾 Registration Saved!</h3>
+          <span class="modal-subtitle">Your squad slot is reserved. Complete payment whenever ready.</span>
+        </div>
+        <button type="button" class="modal-close" id="modal-pay-later-close">&times;</button>
+      </div>
+      <div class="modal-body text-center" style="padding: 20px 10px;">
+        <div style="font-size: 40px; margin-bottom: 10px;">🎉</div>
+        <h4 style="margin: 0 0 8px 0; color: var(--text-primary); font-size: 1.2rem;">Squad Credentials Confirmed!</h4>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px;">
+          Your squad <strong id="pay-later-team-name" class="text-accent"></strong> is reserved with Registration ID:
+        </p>
+
+        <div style="background: rgba(99, 102, 241, 0.1); border: 1px dashed #6366f1; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+          <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Registration ID</span>
+          <strong id="pay-later-reg-id" style="font-size: 1.5rem; font-family: monospace; color: #818cf8; letter-spacing: 2px;">CV26-TM-XXXXX</strong>
+        </div>
+
+        <div style="margin-bottom: 20px; text-align: left;">
+          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 6px;">Direct Link to Resume Payment:</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="pay-later-link-input" class="form-input" readonly style="font-size: 0.85rem; background: rgba(15, 23, 42, 0.6);">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-resume-link">Copy</button>
+          </div>
+          <small id="pay-later-email-notice" style="color: #10b981; display: block; margin-top: 8px; font-size: 0.85rem;">
+            ✉️ An email with this link has also been sent to your registered email!
+          </small>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button type="button" class="btn btn-secondary" id="btn-close-pay-later-modal">Back to Home</button>
+          <button type="button" class="btn btn-primary" id="btn-pay-now-from-modal">Pay Now →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -1050,9 +1148,6 @@
         <span class="footer-sep">•</span>
         <a href="index.html#contact" class="footer-link">Contact</a>
       </div>
-    </div>
-    <div class="footer-bottom-line">
-      <span>🔒 Official Gateway Verified via Indian Bank (IDIB000V143) • Metaversity Club © 2026</span>
     </div>
   </footer>
 

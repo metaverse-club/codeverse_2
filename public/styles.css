@@ -3065,6 +3065,10 @@ img, svg, video, canvas {
     border-radius: var(--radius-md);
     padding: 12px 14px;
   }
+
+  .metrics-glass-strip .metric-block:last-child {
+    grid-column: 1 / -1;
+  }
 }
 
 /* Mobile & Small Tablets (<= 768px) */
@@ -3166,12 +3170,12 @@ img, svg, video, canvas {
     font-size: 0.92rem;
   }
   
-  /* Metrics Strip 2x2 Grid */
+  /* Metrics Strip Mobile Layout */
   .metrics-glass-strip {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 12px;
-    padding: 14px 12px;
+    padding: 14px 14px;
     width: 100%;
     border-radius: var(--radius-md);
   }
@@ -3181,8 +3185,9 @@ img, svg, video, canvas {
   }
   
   .metric-block {
-    gap: 10px;
-    padding: 10px 12px;
+    gap: 12px;
+    padding: 12px 14px;
+    grid-column: auto;
   }
   
   .metric-icon-wrap {
@@ -3695,5 +3700,149 @@ img, svg, video, canvas {
   .sponsors-wrapper {
     grid-template-columns: 1fr;
   }
+}
+
+/* ================= CONTINUE REGISTRATION & PAY LATER STYLES ================= */
+.pending-reg-banner {
+  background: linear-gradient(90deg, rgba(30, 27, 75, 0.95), rgba(49, 46, 129, 0.95));
+  border-bottom: 1px solid rgba(129, 140, 248, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  position: relative;
+  z-index: 99;
+  padding: 12px 0;
+  animation: slideDownBanner 0.4s ease-out forwards;
+}
+
+@keyframes slideDownBanner {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pending-banner-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pending-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pending-banner-badge {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  animation: pulseBadge 2s infinite ease-in-out;
+}
+
+@keyframes pulseBadge {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.03); }
+}
+
+.pending-banner-text {
+  color: #f1f5f9;
+  font-size: 0.92rem;
+}
+
+.pending-banner-text strong {
+  color: #ffffff;
+}
+
+.pending-banner-text code {
+  background: rgba(0, 0, 0, 0.3);
+  color: #a5b4fc;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.pending-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-banner-dismiss {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+}
+
+.btn-banner-dismiss:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-btn-resume {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #fbbf24 !important;
+}
+
+.nav-btn-resume:hover {
+  background: rgba(245, 158, 11, 0.2) !important;
+  border-color: #fbbf24 !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.3) !important;
+}
+
+.step1-pending-notice {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  padding: 14px;
+  animation: fadeInNotice 0.3s ease-out;
+}
+
+@keyframes fadeInNotice {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pending-notice-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: #fde68a;
+}
+
+.pending-notice-card code {
+  background: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+#btn-pay-later:hover {
+  background: rgba(245, 158, 11, 0.15) !important;
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.25) !important;
 }
 

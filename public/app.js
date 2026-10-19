@@ -84,6 +84,17 @@ async function initApp() {
   // Restore session state
   restoreSessionState();
 
+  // Check for direct resume URL parameter or local pending registration
+  const urlParams = new URLSearchParams(window.location.search);
+  const resumeParam = urlParams.get('resume');
+  if (resumeParam) {
+    await handleResumeRegistration(resumeParam);
+  } else if (urlParams.get('openResume')) {
+    openResumeModal();
+  } else {
+    checkPendingRegistrationBanner();
+  }
+
   // Bind auto-save listeners
   document.addEventListener('input', () => setTimeout(saveSessionState, 100));
   document.addEventListener('change', () => setTimeout(saveSessionState, 100));
@@ -331,6 +342,29 @@ function initOTPLogic() {
         showToast('OTP sent! Please check your email.', 'success');
         otpSection.style.display = 'block';
         otpHint.style.display = 'none';
+
+        // Check if there is an existing pending team for this email
+        const noticeEl = document.getElementById('step1-pending-notice');
+        if (noticeEl) {
+          if (data.pendingTeam) {
+            noticeEl.style.display = 'block';
+            noticeEl.innerHTML = `
+              <div class="pending-notice-card">
+                <div>
+                  <span>⚡ Incomplete registration found for squad <strong>${escapeHtml(data.pendingTeam.teamName)}</strong> (ID: <code>${escapeHtml(data.pendingTeam.registrationId)}</code>).</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-primary" id="btn-inline-resume-pay">
+                  Continue to Payment →
+                </button>
+              </div>
+            `;
+            document.getElementById('btn-inline-resume-pay')?.addEventListener('click', () => {
+              handleResumeRegistration(data.pendingTeam.registrationId);
+            });
+          } else {
+            noticeEl.style.display = 'none';
+          }
+        }
         
         // Cooldown for resend
         let countdown = 60;
@@ -408,6 +442,8 @@ function initOTPLogic() {
   emailInput.addEventListener('input', () => {
     isLeaderEmailVerified = false;
     otpSection.style.display = 'none';
+    const noticeEl = document.getElementById('step1-pending-notice');
+    if (noticeEl) noticeEl.style.display = 'none';
     otpHint.style.display = 'block';
     otpHint.innerHTML = 'Official updates & receipt will be sent here. Email verification required.';
     otpHint.style.color = 'var(--text-muted)';
@@ -512,6 +548,55 @@ function bindEvents() {
     }
   });
   document.getElementById('form-edit-team')?.addEventListener('submit', handleSaveTeamEdit);
+
+  // Resume / Continue Registration bindings
+  document.getElementById('nav-resume-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openResumeModal();
+  });
+  document.getElementById('btn-open-resume-modal')?.addEventListener('click', openResumeModal);
+  document.getElementById('modal-resume-close')?.addEventListener('click', closeResumeModal);
+  document.getElementById('btn-lookup-resume')?.addEventListener('click', () => {
+    const val = document.getElementById('resume-search-input')?.value.trim();
+    if (val) handleResumeRegistration(val);
+    else showToast('Please enter your Registration ID or College Email', 'warning');
+  });
+  document.getElementById('resume-search-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = document.getElementById('resume-search-input')?.value.trim();
+      if (val) handleResumeRegistration(val);
+      else showToast('Please enter your Registration ID or College Email', 'warning');
+    }
+  });
+
+  // Persistent Banner actions
+  document.getElementById('btn-banner-resume')?.addEventListener('click', () => {
+    const regId = document.getElementById('pending-banner-reg-id')?.textContent.trim();
+    if (regId) handleResumeRegistration(regId);
+  });
+  document.getElementById('btn-banner-dismiss')?.addEventListener('click', () => {
+    hidePendingBanner();
+  });
+
+  // Step 4 Pay Later
+  document.getElementById('btn-pay-later')?.addEventListener('click', handlePayLater);
+  document.getElementById('modal-pay-later-close')?.addEventListener('click', closePayLaterModal);
+  document.getElementById('btn-close-pay-later-modal')?.addEventListener('click', () => {
+    closePayLaterModal();
+    window.location.href = 'index.html';
+  });
+  document.getElementById('btn-pay-now-from-modal')?.addEventListener('click', () => {
+    closePayLaterModal();
+    document.getElementById('step-4')?.scrollIntoView({ behavior: 'smooth' });
+  });
+  document.getElementById('btn-copy-resume-link')?.addEventListener('click', () => {
+    const input = document.getElementById('pay-later-link-input');
+    if (input && input.value) {
+      copyToClipboard(input.value);
+      showToast('Resume link copied to clipboard!', 'success');
+    }
+  });
 
   // Mobile Hamburger & Navigation Drawer Toggle
   const hamburgerBtn = document.getElementById('nav-hamburger-btn');
@@ -993,6 +1078,20 @@ async function handleConfirmAndProceedToPayment() {
     state.registeredTeam = data.team;
     const regId = data.team.registrationId;
 
+    // Save pending registration in localStorage so user can resume anytime
+    try {
+      localStorage.setItem('codeverse_pending_registration', JSON.stringify({
+        registrationId: regId,
+        teamName: state.teamDraft.teamName,
+        leaderEmail: state.teamDraft.leader.collegeEmail,
+        memberCount: 1 + state.teamDraft.members.length,
+        timestamp: Date.now()
+      }));
+      showPendingBanner(state.teamDraft.teamName, regId);
+    } catch (e) {
+      console.warn('Could not save pending registration to localStorage:', e);
+    }
+
     // Display Registration ID in Step 4
     const regIdDisplay = document.getElementById('payment-reg-id-display');
     if (regIdDisplay) regIdDisplay.textContent = regId;
@@ -1159,6 +1258,10 @@ async function handlePaymentSubmit(e) {
 
     goToStep(6);
     sessionStorage.removeItem('codeverse_reg_state');
+    try {
+      localStorage.removeItem('codeverse_pending_registration');
+      hidePendingBanner();
+    } catch (e) {}
     showToast('Registration submitted successfully! Pending verification.', 'success');
   } catch (err) {
     showToast(err.message, 'error');
@@ -1345,12 +1448,22 @@ async function handleTrackLookup() {
         `}
       </div>
 
-      <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: flex-end;">
+      <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+        ${team.status === 'PENDING_PAYMENT' ? `
+          <button type="button" class="btn btn-primary btn-sm" id="btn-track-resume-pay">
+            ⚡ Complete Payment Now
+          </button>
+        ` : ''}
         <button type="button" class="btn btn-outline btn-sm" id="btn-track-jump-edit" style="gap: 0.4rem;">
           ✏️ Edit Team / Member Details
         </button>
       </div>
     `;
+
+    document.getElementById('btn-track-resume-pay')?.addEventListener('click', () => {
+      closeTrackModal();
+      handleResumeRegistration(team.registrationId);
+    });
 
     document.getElementById('btn-track-jump-edit')?.addEventListener('click', () => {
       closeTrackModal();
@@ -1362,6 +1475,244 @@ async function handleTrackLookup() {
         Error retrieving registration: ${escapeHtml(err.message)}
       </div>
     `;
+  }
+}
+
+/**
+ * =========================================================================
+ * Resume Registration & Pay Later Logic
+ * =========================================================================
+ */
+
+function openResumeModal() {
+  const modal = document.getElementById('resume-modal');
+  const input = document.getElementById('resume-search-input');
+  const errorMsg = document.getElementById('resume-error-msg');
+  if (modal) modal.classList.remove('hidden');
+  if (errorMsg) errorMsg.style.display = 'none';
+  if (input) {
+    input.value = '';
+    setTimeout(() => input.focus(), 50);
+  }
+}
+
+function closeResumeModal() {
+  document.getElementById('resume-modal')?.classList.add('hidden');
+}
+
+function closePayLaterModal() {
+  document.getElementById('pay-later-modal')?.classList.add('hidden');
+}
+
+function showPendingBanner(teamName, regId) {
+  const banner = document.getElementById('pending-reg-banner');
+  const teamEl = document.getElementById('pending-banner-team-name');
+  const regIdEl = document.getElementById('pending-banner-reg-id');
+  if (teamEl) teamEl.textContent = teamName;
+  if (regIdEl) regIdEl.textContent = regId;
+  if (banner) banner.style.display = 'block';
+}
+
+function hidePendingBanner() {
+  const banner = document.getElementById('pending-reg-banner');
+  if (banner) banner.style.display = 'none';
+}
+
+async function checkPendingRegistrationBanner() {
+  try {
+    const raw = localStorage.getItem('codeverse_pending_registration');
+    if (!raw) return;
+    const pending = JSON.parse(raw);
+    if (!pending || !pending.registrationId) return;
+
+    // Check with backend if still pending payment
+    const res = await fetch(`/api/registration/resume/${encodeURIComponent(pending.registrationId)}`);
+    const data = await res.json();
+    if (data.success && data.team && data.team.status === 'PENDING_PAYMENT') {
+      showPendingBanner(data.team.teamName, data.team.registrationId);
+    } else {
+      // Payment was already made or team not found
+      localStorage.removeItem('codeverse_pending_registration');
+      hidePendingBanner();
+    }
+  } catch (err) {
+    console.warn('Error checking pending banner:', err);
+  }
+}
+
+async function handleResumeRegistration(identifier) {
+  if (!identifier || !identifier.trim()) return;
+  const cleanId = identifier.trim();
+
+  const resumeBtn = document.getElementById('btn-lookup-resume');
+  const errorMsg = document.getElementById('resume-error-msg');
+  if (resumeBtn) {
+    resumeBtn.disabled = true;
+    resumeBtn.textContent = 'Finding...';
+  }
+  if (errorMsg) errorMsg.style.display = 'none';
+
+  try {
+    const res = await fetch(`/api/registration/resume/${encodeURIComponent(cleanId)}`);
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      if (data.alreadyPaid) {
+        showToast(data.error || 'Payment already submitted for this team.', 'info');
+        openTrackModal(cleanId);
+        closeResumeModal();
+        return;
+      }
+      throw new Error(data.error || 'No pending registration found for this ID or Email.');
+    }
+
+    const team = data.team;
+    state.registeredTeam = team;
+
+    // Populate team draft
+    state.teamDraft.teamName = team.teamName;
+    state.teamDraft.track = team.track || 'To be decided (Post-Vibecoding)';
+    state.teamDraft.projectTitle = team.projectTitle || '';
+
+    const leader = team.leader || (team.members && team.members.find(m => m.isLeader)) || (team.members && team.members[0]);
+    if (leader) {
+      state.teamDraft.leader = {
+        fullName: leader.fullName,
+        regNumber: leader.regNumber,
+        collegeEmail: leader.collegeEmail,
+        phone: leader.phone
+      };
+
+      // Also set form values in Step 1
+      const lNameInput = document.getElementById('leader-name');
+      const lRegInput = document.getElementById('leader-reg');
+      const lEmailInput = document.getElementById('leader-email');
+      const lPhoneInput = document.getElementById('leader-phone');
+      const tNameInput = document.getElementById('team-name');
+      if (lNameInput) lNameInput.value = leader.fullName;
+      if (lRegInput) lRegInput.value = leader.regNumber;
+      if (lEmailInput) {
+        lEmailInput.value = leader.collegeEmail;
+        lEmailInput.readOnly = true;
+      }
+      if (lPhoneInput) lPhoneInput.value = leader.phone;
+      if (tNameInput) tNameInput.value = team.teamName;
+    }
+
+    const otherMembers = (team.members || []).filter(m => !m.isLeader);
+    state.teamDraft.members = otherMembers.map((m, idx) => ({
+      id: `mem_${idx + 1}`,
+      fullName: m.fullName,
+      regNumber: m.regNumber,
+      collegeEmail: m.collegeEmail,
+      phone: m.phone
+    }));
+
+    renderMembers();
+    updateMemberCounter();
+
+    // Save to local storage for persistent resume
+    try {
+      localStorage.setItem('codeverse_pending_registration', JSON.stringify({
+        registrationId: team.registrationId,
+        teamName: team.teamName,
+        leaderEmail: leader ? leader.collegeEmail : '',
+        memberCount: team.memberCount || team.members.length,
+        timestamp: Date.now()
+      }));
+    } catch (e) {}
+
+    showPendingBanner(team.teamName, team.registrationId);
+
+    // Update Step 4 displays
+    const regIdDisplay = document.getElementById('payment-reg-id-display');
+    if (regIdDisplay) regIdDisplay.textContent = team.registrationId;
+
+    const remarkHint = document.getElementById('upi-team-remark-hint');
+    if (remarkHint) remarkHint.textContent = `${team.teamName} (${team.registrationId})`;
+
+    updatePricingDisplay();
+
+    // Bypass instructions gate & show wizard container
+    const instructionsGate = document.getElementById('instructions-gate');
+    const registerWizard = document.getElementById('register-wizard-container');
+    if (instructionsGate) instructionsGate.style.display = 'none';
+    if (registerWizard) registerWizard.style.display = 'block';
+
+    closeResumeModal();
+    goToStep(4);
+    showToast(`Registration resumed! Welcome back, Team ${team.teamName}. Please complete your payment below.`, 'success');
+  } catch (err) {
+    if (errorMsg) {
+      errorMsg.textContent = err.message;
+      errorMsg.style.display = 'block';
+    } else {
+      showToast(err.message, 'error');
+    }
+  } finally {
+    if (resumeBtn) {
+      resumeBtn.disabled = false;
+      resumeBtn.textContent = 'Find & Continue';
+    }
+  }
+}
+
+async function handlePayLater() {
+  const regId = state.registeredTeam?.registrationId || state.registeredTeam?.registration_id;
+  if (!regId) {
+    showToast('Registration ID not found. Please review and confirm your details first.', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-pay-later');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+  }
+
+  try {
+    const res = await fetch('/api/registration/pay-later', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ registrationId: regId })
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to save registration.');
+    }
+
+    // Populate Pay Later Modal
+    const modal = document.getElementById('pay-later-modal');
+    const teamNameEl = document.getElementById('pay-later-team-name');
+    const regIdEl = document.getElementById('pay-later-reg-id');
+    const linkInput = document.getElementById('pay-later-link-input');
+    const emailNotice = document.getElementById('pay-later-email-notice');
+
+    if (teamNameEl) teamNameEl.textContent = state.teamDraft.teamName;
+    if (regIdEl) regIdEl.textContent = regId;
+    const resumeLink = data.resumeUrl || `${window.location.origin}/register.html?resume=${encodeURIComponent(regId)}`;
+    if (linkInput) linkInput.value = resumeLink;
+
+    if (emailNotice) {
+      if (data.emailSent) {
+        emailNotice.style.display = 'block';
+        emailNotice.innerHTML = `✉️ A direct link has been sent to <strong>${escapeHtml(state.teamDraft.leader.collegeEmail)}</strong>!`;
+      } else {
+        emailNotice.style.display = 'block';
+        emailNotice.textContent = `📋 Please bookmark or copy this link so you can return to complete payment.`;
+      }
+    }
+
+    if (modal) modal.classList.remove('hidden');
+    showToast('Registration saved! You can resume and pay anytime.', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `💾 Pay Later & Save Link`;
+    }
   }
 }
 

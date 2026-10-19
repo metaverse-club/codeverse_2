@@ -8,7 +8,7 @@ const QRCode = require('qrcode');
 const crypto = require('crypto');
 const db = require('./db');
 const { generateRegistrationExcel } = require('./excelExport');
-const { sendOTPEmail, sendStatusEmail } = require('./mailer');
+const { sendOTPEmail, sendStatusEmail, sendPayLaterEmail } = require('./mailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -228,17 +228,38 @@ app.post('/api/send-otp', async (req, res) => {
       });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Check if this email already has an incomplete registration waiting for payment
+    let pendingTeamInfo = null;
+    try {
+      const existingTeam = await db.getPendingTeam(normalizedEmail);
+      if (existingTeam && existingTeam.status === 'PENDING_PAYMENT') {
+        pendingTeamInfo = {
+          registrationId: existingTeam.registrationId,
+          teamName: existingTeam.teamName,
+          memberCount: existingTeam.memberCount || (existingTeam.members ? existingTeam.members.length : 2)
+        };
+      }
+    } catch (checkErr) {
+      console.warn('[SEND-OTP] Error checking pending team:', checkErr.message);
+    }
+
     // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-    otpStore.set(email.trim().toLowerCase(), { otp, expiresAt });
+    otpStore.set(normalizedEmail, { otp, expiresAt });
 
-    const emailResult = await sendOTPEmail(email.trim().toLowerCase(), otp);
+    const emailResult = await sendOTPEmail(normalizedEmail, otp);
     const isSuccess = typeof emailResult === 'object' ? emailResult.success : !!emailResult;
 
     if (isSuccess) {
-      res.json({ success: true, message: 'OTP sent successfully to ' + email });
+      res.json({
+        success: true,
+        message: 'OTP sent successfully to ' + email,
+        pendingTeam: pendingTeamInfo
+      });
     } else {
       const errMsg = (typeof emailResult === 'object' && emailResult.error)
         ? emailResult.error
@@ -436,6 +457,104 @@ app.get('/api/registration/:registrationId', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/registration/resume/:identifier
+ * Look up pending team by Registration ID or Leader Email for continuing payment.
+ */
+app.get('/api/registration/resume/:identifier', async (req, res) => {
+  try {
+    const { identifier } = req.params;
+    if (!identifier || !identifier.trim()) {
+      return res.status(400).json({ success: false, error: 'Registration ID or College Email is required.' });
+    }
+
+    const team = await db.getPendingTeam(identifier.trim());
+    if (!team) {
+      return res.status(404).json({
+        success: false,
+        error: `No registration found for "${identifier}". Please check your Registration ID or Email.`
+      });
+    }
+
+    if (team.status !== 'PENDING_PAYMENT') {
+      return res.status(400).json({
+        success: false,
+        alreadyPaid: true,
+        status: team.status,
+        error: `Registration ${team.registrationId} has already submitted payment (Status: ${team.status}).`
+      });
+    }
+
+    const memberCount = team.memberCount || (team.members ? team.members.length : 2);
+    const fee = HACKATHON_CONFIG.pricingTiers[memberCount] || 250;
+
+    res.json({
+      success: true,
+      team: {
+        ...team,
+        fee
+      }
+    });
+  } catch (err) {
+    console.error('Error in /api/registration/resume:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/registration/pay-later
+ * Send pay later email reminder with direct resume URL.
+ */
+app.post('/api/registration/pay-later', async (req, res) => {
+  try {
+    const { registrationId } = req.body;
+    if (!registrationId) {
+      return res.status(400).json({ success: false, error: 'Registration ID is required.' });
+    }
+
+    const team = await db.getTeamByRegistrationId(registrationId.trim());
+    if (!team) {
+      return res.status(404).json({ success: false, error: 'Team not found.' });
+    }
+
+    const leader = team.leader || (team.members && team.members.find(m => m.isLeader)) || (team.members && team.members[0]);
+    const leaderEmail = leader ? leader.collegeEmail : null;
+    const memberCount = team.memberCount || (team.members ? team.members.length : 2);
+    const fee = HACKATHON_CONFIG.pricingTiers[memberCount] || 250;
+
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const resumeUrl = `${protocol}://${host}/register.html?resume=${encodeURIComponent(team.registrationId)}`;
+
+    let emailSent = false;
+    if (leaderEmail) {
+      try {
+        emailSent = await sendPayLaterEmail({
+          toEmail: leaderEmail,
+          teamName: team.teamName,
+          registrationId: team.registrationId,
+          resumeUrl,
+          memberCount,
+          fee
+        });
+      } catch (emailErr) {
+        console.warn('[PAY LATER EMAIL ERROR]', emailErr.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: leaderEmail ? `Resume link sent to ${leaderEmail}` : 'Registration saved',
+      registrationId: team.registrationId,
+      resumeUrl,
+      emailSent
+    });
+  } catch (err) {
+    console.error('Error in /api/registration/pay-later:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ----------------- ADMIN AUTHENTICATION & SECURITY -----------------
 
 const ADMIN_CREDENTIALS = {
@@ -568,8 +687,15 @@ app.post('/api/admin/verify', requireAdminAuth, async (req, res) => {
         : (updatedTeam.members && updatedTeam.members.length > 0 ? updatedTeam.members[0].collegeEmail : null);
         
       if (leaderEmail) {
+        const teamRegId = updatedTeam.registrationId || updatedTeam.registration_id || registrationId;
         // We don't await this so it doesn't block the API response
-        sendStatusEmail(leaderEmail, updatedTeam.team_name || updatedTeam.teamName, upperStatus === 'VERIFIED' ? 'Verified' : 'Rejected', adminNotes || '').catch(err => {
+        sendStatusEmail(
+          leaderEmail,
+          updatedTeam.team_name || updatedTeam.teamName,
+          upperStatus === 'VERIFIED' ? 'Verified' : 'Rejected',
+          adminNotes || '',
+          teamRegId
+        ).catch(err => {
           console.error('Failed to send status email:', err);
         });
       } else {
@@ -622,6 +748,25 @@ app.all(['/api/admin/teams/:id/update', '/api/admin/teams/:id'], requireAdminAut
       registrationId: id,
       ...req.body
     });
+
+    if (req.body.status) {
+      const upperStatus = req.body.status.toUpperCase();
+      if (upperStatus === 'VERIFIED' || upperStatus === 'REJECTED') {
+        const leaderEmail = updatedTeam.leader 
+          ? updatedTeam.leader.collegeEmail 
+          : (updatedTeam.members && updatedTeam.members.length > 0 ? updatedTeam.members[0].collegeEmail : null);
+        if (leaderEmail) {
+          const teamRegId = updatedTeam.registrationId || updatedTeam.registration_id || id;
+          sendStatusEmail(
+            leaderEmail,
+            updatedTeam.team_name || updatedTeam.teamName,
+            upperStatus === 'VERIFIED' ? 'Verified' : 'Rejected',
+            req.body.adminNotes || (updatedTeam.payment ? updatedTeam.payment.adminNotes : ''),
+            teamRegId
+          ).catch(err => console.error('Failed to send status email on adminUpdateTeam:', err));
+        }
+      }
+    }
 
     res.json({
       success: true,

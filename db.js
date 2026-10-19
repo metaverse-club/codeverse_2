@@ -145,6 +145,44 @@ async function getTeamByRegistrationId(registrationId) {
   };
 }
 
+async function getTeamByEmail(email) {
+  if (!email) return null;
+  const cleanEmail = email.trim().toLowerCase();
+  const { data: memberData } = await supabase
+    .from('team_members')
+    .select('team_id')
+    .ilike('college_email', cleanEmail)
+    .limit(1)
+    .maybeSingle();
+
+  if (!memberData || !memberData.team_id) return null;
+
+  const { data: team } = await supabase
+    .from('teams')
+    .select('registration_id')
+    .eq('id', memberData.team_id)
+    .limit(1)
+    .maybeSingle();
+
+  if (!team || !team.registration_id) return null;
+  return await getTeamByRegistrationId(team.registration_id);
+}
+
+async function getPendingTeam(identifier) {
+  if (!identifier) return null;
+  const clean = identifier.trim();
+  let team = null;
+  if (clean.includes('@')) {
+    team = await getTeamByEmail(clean);
+  } else {
+    team = await getTeamByRegistrationId(clean.toUpperCase());
+    if (!team) {
+      team = await getTeamByRegistrationId(clean);
+    }
+  }
+  return team;
+}
+
 async function updateTeamDetails({ registrationId, teamName, track, projectTitle, members }) {
   const team = await getTeamByRegistrationId(registrationId);
   if (!team) throw new Error(`Team ${registrationId} not found.`);
@@ -443,6 +481,8 @@ module.exports = {
   supabase,
   createTeam,
   getTeamByRegistrationId,
+  getTeamByEmail,
+  getPendingTeam,
   updateTeamDetails,
   submitPayment,
   getAllTeams,
