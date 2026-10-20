@@ -10,14 +10,67 @@ const db = require('./db');
 const { generateRegistrationExcel } = require('./excelExport');
 const { sendOTPEmail, sendStatusEmail, sendPayLaterEmail } = require('./mailer');
 
+const { rateLimit } = require('express-rate-limit');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Temporary in-memory store for OTPs: { email: { otp: "123456", expiresAt: timestamp } }
+// Enable trust proxy for Render load balancer
+app.set('trust proxy', 1);
+
+// Security token stores
+// 1. In-memory store for unverified OTPs: { email: { otp: "123456", expiresAt: timestamp } }
 const otpStore = new Map();
+
+// 2. Server-side store for verified OTP sessions: { token: { email, expiresAt } }
+const verifiedTokens = new Map();
+
+// 3. Server-side store for team owner auth tokens: { token: { registrationId, leaderEmail, expiresAt } }
+const teamAuthTokens = new Map();
+
+// Input sanitizer: rejects HTML/CSS/script injection strings
+function containsMaliciousHtml(str) {
+  if (!str || typeof str !== 'string') return false;
+  return /<[^>]*>|javascript:|data:/i.test(str);
+}
+
+// IP Logger Middleware
+app.use((req, res, next) => {
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress;
+  console.log(`📡 [${new Date().toLocaleTimeString('en-IN')}] ${req.method} ${req.originalUrl} | IP: ${clientIp}`);
+  next();
+});
+
+// Global API rate limiter (120 requests/min per IP)
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests. Please slow down and try again in a minute.' }
+});
+
+// Registration & payment submission rate limiter (8 attempts per 15 min per IP)
+const registrationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many attempts from this IP. Please wait 15 minutes before trying again.' }
+});
+
+// OTP request & verification limiter (5 attempts per 15 min per IP)
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many OTP requests from this IP. Please wait a few minutes before trying again.' }
+});
 
 // Middleware
 app.use(cors());
+app.use('/api', apiLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -150,6 +203,7 @@ app.get('/api/config', async (req, res) => {
 /**
  * GET /api/team/edit-info/:registrationId
  * Look up team for editing and verify edit window status
+ * Requires leaderEmail or teamAuthToken to prevent unauthorized scraping of participant details
  */
 app.get('/api/team/edit-info/:registrationId', async (req, res) => {
   try {
@@ -161,6 +215,24 @@ app.get('/api/team/edit-info/:registrationId', async (req, res) => {
     const team = await db.getTeamByRegistrationId(registrationId.trim());
     if (!team) {
       return res.status(404).json({ success: false, error: `Team with Registration ID "${registrationId}" was not found.` });
+    }
+
+    // Authorization check: Leader Email or Token
+    const leaderEmailParam = req.query.leaderEmail ? req.query.leaderEmail.trim().toLowerCase() : null;
+    const providedToken = req.query.token || (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') ? req.headers.authorization.substring(7).trim() : null);
+
+    const leader = team.leader || (team.members && team.members.find(m => m.isLeader)) || (team.members && team.members[0]);
+    const actualLeaderEmail = leader ? leader.collegeEmail.toLowerCase().trim() : '';
+
+    const tokenRecord = teamAuthTokens.get(providedToken);
+    const isTokenValid = tokenRecord && tokenRecord.registrationId === team.registrationId && tokenRecord.expiresAt > Date.now();
+    const isEmailMatch = leaderEmailParam && leaderEmailParam === actualLeaderEmail;
+
+    if (!isTokenValid && !isEmailMatch) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access restricted: Please enter the registered Team Leader Email to view and edit team details.'
+      });
     }
 
     const editDeadline = await db.getEditDeadline();
@@ -182,13 +254,48 @@ app.get('/api/team/edit-info/:registrationId', async (req, res) => {
 /**
  * PUT /api/team/update
  * Updates team name, track, project title, and member roster details
+ * Requires leader email authorization and validates against HTML injection
  */
 app.put('/api/team/update', async (req, res) => {
   try {
-    const { registrationId, teamName, track, projectTitle, members } = req.body;
+    const { registrationId, teamName, track, projectTitle, members, leaderEmail } = req.body;
 
     if (!registrationId) {
       return res.status(400).json({ success: false, error: 'Registration ID is required.' });
+    }
+
+    // 1. Sanitize against HTML/CSS injection
+    if (containsMaliciousHtml(teamName) || containsMaliciousHtml(projectTitle)) {
+      return res.status(400).json({ success: false, error: 'HTML tags or script injections are not allowed in team details.' });
+    }
+
+    if (Array.isArray(members)) {
+      for (const m of members) {
+        if (containsMaliciousHtml(m.fullName) || containsMaliciousHtml(m.regNumber)) {
+          return res.status(400).json({ success: false, error: 'HTML tags or script injections are not allowed in member details.' });
+        }
+      }
+    }
+
+    // 2. Authorization check against database
+    const team = await db.getTeamByRegistrationId(registrationId.trim());
+    if (!team) {
+      return res.status(404).json({ success: false, error: 'Team not found.' });
+    }
+
+    const leader = team.leader || (team.members && team.members.find(m => m.isLeader)) || (team.members && team.members[0]);
+    const actualLeaderEmail = leader ? leader.collegeEmail.toLowerCase().trim() : '';
+
+    const providedEmail = (leaderEmail || (members && members[0] ? members[0].collegeEmail : '')).trim().toLowerCase();
+    const providedToken = req.body.token || (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') ? req.headers.authorization.substring(7).trim() : null);
+    const tokenRecord = teamAuthTokens.get(providedToken);
+    const isTokenValid = tokenRecord && tokenRecord.registrationId === team.registrationId && tokenRecord.expiresAt > Date.now();
+
+    if (!isTokenValid && providedEmail !== actualLeaderEmail) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized: Modifications can only be submitted with the Team Leader\'s verified email address.'
+      });
     }
 
     const updatedTeam = await db.updateTeamDetails({
@@ -213,11 +320,15 @@ app.put('/api/team/update', async (req, res) => {
  * POST /api/send-otp
  * Generates and sends a 6-digit OTP to the team leader's email.
  */
-app.post('/api/send-otp', async (req, res) => {
+app.post('/api/send-otp', otpLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email || !email.trim()) {
       return res.status(400).json({ success: false, error: 'Email is required.' });
+    }
+
+    if (containsMaliciousHtml(email)) {
+      return res.status(400).json({ success: false, error: 'Invalid characters in email.' });
     }
 
     if (!process.env.GOOGLE_SCRIPT_URL && (!process.env.EMAIL_USER || !process.env.EMAIL_PASS)) {
@@ -275,9 +386,9 @@ app.post('/api/send-otp', async (req, res) => {
 
 /**
  * POST /api/verify-otp
- * Verifies the OTP provided by the team leader.
+ * Verifies the OTP provided by the team leader and issues a temporary verification token.
  */
-app.post('/api/verify-otp', (req, res) => {
+app.post('/api/verify-otp', otpLimiter, (req, res) => {
   try {
     const { email, otp } = req.body;
     if (!email || !otp) {
@@ -300,11 +411,21 @@ app.post('/api/verify-otp', (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid OTP.' });
     }
 
-    // Mark as verified by deleting the OTP so it can't be reused, or you could add a verified flag if needed.
-    // We'll delete it to clean up, as the frontend will just proceed.
+    // Clean up OTP to prevent reuse
     otpStore.delete(normalizedEmail);
 
-    res.json({ success: true, message: 'Email verified successfully.' });
+    // Issue a cryptographically secure, short-lived verification token tied to this email
+    const verificationToken = `vtok_${crypto.randomBytes(24).toString('hex')}`;
+    verifiedTokens.set(verificationToken, {
+      email: normalizedEmail,
+      expiresAt: Date.now() + 60 * 60 * 1000 // Valid for 1 hour to complete registration
+    });
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully.',
+      verificationToken
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -312,11 +433,11 @@ app.post('/api/verify-otp', (req, res) => {
 
 /**
  * POST /api/register
- * Register a new team with 4 members.
+ * Register a new team. Enforces server-side OTP token verification and input sanitization.
  */
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', registrationLimiter, async (req, res) => {
   try {
-    // Check Registration Deadline
+    // 1. Check Registration Deadline
     const isDeadlinePassed = await db.isRegistrationDeadlinePassed();
     if (isDeadlinePassed) {
       return res.status(403).json({
@@ -325,10 +446,15 @@ app.post('/api/register', async (req, res) => {
       });
     }
 
-    const { teamName, track, projectTitle, members } = req.body;
+    const { teamName, track, projectTitle, members, verificationToken } = req.body;
 
     if (!teamName || !teamName.trim()) {
       return res.status(400).json({ success: false, error: 'Team name is required.' });
+    }
+
+    // 2. Sanitize against HTML/CSS injection
+    if (containsMaliciousHtml(teamName) || containsMaliciousHtml(projectTitle)) {
+      return res.status(400).json({ success: false, error: 'HTML tags and script injections are not allowed.' });
     }
 
     if (!Array.isArray(members) || members.length < 2 || members.length > 5) {
@@ -338,7 +464,7 @@ app.post('/api/register', async (req, res) => {
       });
     }
 
-    // Email regex validation
+    // 3. Email regex & member validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     for (let i = 0; i < members.length; i++) {
       const m = members[i];
@@ -354,8 +480,28 @@ app.post('/api/register', async (req, res) => {
       if (!m.phone || m.phone.trim().replace(/\D/g, '').length < 10) {
         return res.status(400).json({ success: false, error: `Member ${i + 1}: Valid 10-digit phone number is required.` });
       }
+
+      if (containsMaliciousHtml(m.fullName) || containsMaliciousHtml(m.regNumber)) {
+        return res.status(400).json({ success: false, error: `Member ${i + 1}: HTML tags or script injections are not allowed.` });
+      }
     }
 
+    // 4. Server-Side OTP Enforcement
+    const leader = members.find(m => m.isLeader) || members[0];
+    const leaderEmail = (leader.collegeEmail || '').trim().toLowerCase();
+
+    const tokenRecord = verifiedTokens.get(verificationToken);
+    if (!tokenRecord || tokenRecord.expiresAt < Date.now() || tokenRecord.email !== leaderEmail) {
+      return res.status(403).json({
+        success: false,
+        error: 'Email verification required: Please enter and verify the OTP sent to the Team Leader\'s email before registering.'
+      });
+    }
+
+    // Clean up one-time verification token
+    verifiedTokens.delete(verificationToken);
+
+    // 5. Create Team in Database
     const team = await db.createTeam({
       teamName,
       track,
@@ -363,10 +509,19 @@ app.post('/api/register', async (req, res) => {
       members
     });
 
+    // 6. Issue Team Auth Token for private payment submission
+    const teamAuthToken = `team_tok_${crypto.randomBytes(24).toString('hex')}`;
+    teamAuthTokens.set(teamAuthToken, {
+      registrationId: team.registrationId,
+      leaderEmail,
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+    });
+
     res.status(201).json({
       success: true,
       message: 'Team registered successfully. Please proceed to payment.',
-      team
+      team,
+      teamAuthToken
     });
   } catch (err) {
     console.error('Error in /api/register:', err.message);
@@ -376,9 +531,9 @@ app.post('/api/register', async (req, res) => {
 
 /**
  * POST /api/payment/submit
- * Submit payment transaction details and optional screenshot proof.
+ * Submit payment transaction details and screenshot proof.
  */
-app.post('/api/payment/submit', upload.single('proofFile'), async (req, res) => {
+app.post('/api/payment/submit', registrationLimiter, upload.single('proofFile'), async (req, res) => {
   try {
     const { registrationId, paymentMethod, utrNumber, transactionDate, amountPaid } = req.body;
 
@@ -394,11 +549,21 @@ app.post('/api/payment/submit', upload.single('proofFile'), async (req, res) => 
       return res.status(400).json({ success: false, error: 'Valid Transaction ID / UTR Number (minimum 6 characters) is required.' });
     }
 
+    if (containsMaliciousHtml(utrNumber)) {
+      return res.status(400).json({ success: false, error: 'Invalid characters in UTR Number.' });
+    }
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
         error: 'Payment screenshot / receipt proof is mandatory. Please upload your payment proof image or PDF.'
       });
+    }
+
+    // Verify that the team actually exists
+    const team = await db.getTeamByRegistrationId(registrationId.trim());
+    if (!team) {
+      return res.status(404).json({ success: false, error: `Team with Registration ID "${registrationId}" was not found.` });
     }
 
     const ext = path.extname(req.file.originalname);
@@ -441,9 +606,16 @@ app.post('/api/payment/submit', upload.single('proofFile'), async (req, res) => 
   }
 });
 
+// Helper functions for masking sensitive data on public tracking lookups
+function maskEmail(email) {
+  if (!email || !email.includes('@')) return '***@***.com';
+  const [user, domain] = email.split('@');
+  return `${user.slice(0, 2)}***@${domain}`;
+}
+
 /**
  * GET /api/registration/:registrationId
- * Look up registration and payment status.
+ * Look up registration and payment status with masked sensitive details.
  */
 app.get('/api/registration/:registrationId', async (req, res) => {
   try {
@@ -451,7 +623,27 @@ app.get('/api/registration/:registrationId', async (req, res) => {
     if (!team) {
       return res.status(404).json({ success: false, error: `No registration found for ID "${req.params.registrationId}".` });
     }
-    res.json({ success: true, team });
+
+    // Return sanitized public tracking status (protects personal emails & phone numbers)
+    const publicTeam = {
+      registrationId: team.registrationId,
+      teamName: team.teamName,
+      track: team.track,
+      status: team.status,
+      memberCount: team.memberCount,
+      leader: team.leader ? {
+        fullName: team.leader.fullName,
+        collegeEmail: maskEmail(team.leader.collegeEmail)
+      } : null,
+      payment: team.payment ? {
+        paymentMethod: team.payment.paymentMethod,
+        utrNumber: team.payment.utrNumber ? `****${team.payment.utrNumber.slice(-4)}` : '',
+        status: team.payment.status,
+        adminNotes: team.payment.adminNotes
+      } : null
+    };
+
+    res.json({ success: true, team: publicTeam });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -592,11 +784,31 @@ function requireAdminAuth(req, res, next) {
 
 /**
  * POST /api/admin/login
- * Authenticates admin credentials
+ * Authenticates admin credentials with strict configuration verification
  */
 app.post('/api/admin/login', (req, res) => {
-  const { username, password } = req.body;
-  if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+  if (
+    typeof ADMIN_CREDENTIALS.username !== 'string' ||
+    !ADMIN_CREDENTIALS.username.trim() ||
+    typeof ADMIN_CREDENTIALS.password !== 'string' ||
+    !ADMIN_CREDENTIALS.password.trim()
+  ) {
+    console.error('[SECURITY ALERT] Admin credentials are not configured in environment variables.');
+    return res.status(503).json({
+      success: false,
+      error: 'Admin login is not configured on this server.'
+    });
+  }
+
+  const { username, password } = req.body || {};
+  if (!username || !password) {
+    return res.status(400).json({
+      success: false,
+      error: 'Username and password are required.'
+    });
+  }
+
+  if (username.trim() === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
     const token = `meta_tok_${crypto.randomBytes(32).toString('hex')}`;
     adminSessions.add(token);
     return res.json({
@@ -805,9 +1017,9 @@ app.get(['/api/admin/export', '/api/admin/export-excel'], requireAdminAuth, asyn
 
 /**
  * GET /api/admin/export-csv
- * Optional CSV export fallback
+ * Optional CSV export fallback (Protected by Admin Auth)
  */
-app.get('/api/admin/export-csv', async (req, res) => {
+app.get('/api/admin/export-csv', requireAdminAuth, async (req, res) => {
   try {
     const teams = await db.getAllTeams();
     const headers = [
@@ -1034,10 +1246,26 @@ app.post('/api/admin/seed-demo', requireAdminAuth, async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Unhandled Server Error:', err);
-  res.status(500).json({
+  if (err?.type === 'entity.parse.failed') {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid JSON request body.'
+    });
+  }
+
+  const status = Number.isInteger(err?.status) && err.status >= 400 && err.status < 600 ? err.status : 500;
+  if (status >= 500) {
+    console.error('Unhandled server error:', {
+      method: req.method,
+      path: req.path,
+      errorName: err?.name || 'Error',
+      message: err?.message
+    });
+  }
+
+  return res.status(status).json({
     success: false,
-    error: err.message || 'Internal server error occurred.'
+    error: status >= 500 ? 'Internal server error occurred.' : (err?.message || 'Invalid request.')
   });
 });
 

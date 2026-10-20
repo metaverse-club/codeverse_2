@@ -422,6 +422,10 @@ function initOTPLogic() {
 
       if (data.success) {
         isLeaderEmailVerified = true;
+        state.verificationToken = data.verificationToken;
+        try {
+          sessionStorage.setItem('codeverse_verification_token', data.verificationToken);
+        } catch (e) {}
         showToast('Email verified successfully!', 'success');
         
         // Update UI to show verified state
@@ -1179,10 +1183,13 @@ async function handleConfirmAndProceedToPayment() {
       return;
     }
 
+    const verificationToken = state.verificationToken || sessionStorage.getItem('codeverse_verification_token');
+
     const payload = {
       teamName: state.teamDraft.teamName,
       track: state.teamDraft.track,
       projectTitle: state.teamDraft.projectTitle,
+      verificationToken,
       members: [
         {
           fullName: state.teamDraft.leader.fullName,
@@ -1214,6 +1221,12 @@ async function handleConfirmAndProceedToPayment() {
     }
 
     state.registeredTeam = data.team;
+    if (data.teamAuthToken) {
+      state.teamAuthToken = data.teamAuthToken;
+      try {
+        sessionStorage.setItem('codeverse_team_auth_token', data.teamAuthToken);
+      } catch (e) {}
+    }
     const regId = data.team.registrationId;
 
     // Save pending registration in localStorage so user can resume anytime
@@ -1372,6 +1385,15 @@ async function handlePaymentSubmit(e) {
     formData.append('utrNumber', utrNumber);
     formData.append('transactionDate', transactionDate);
     formData.append('amountPaid', amountPaid);
+
+    const teamAuthToken = state.teamAuthToken || sessionStorage.getItem('codeverse_team_auth_token');
+    if (teamAuthToken) {
+      formData.append('teamAuthToken', teamAuthToken);
+    }
+    const leaderEmail = state.registeredTeam?.leader?.collegeEmail || state.teamDraft?.leader?.collegeEmail;
+    if (leaderEmail) {
+      formData.append('leaderEmail', leaderEmail);
+    }
 
     if (state.proofFile) {
       formData.append('proofFile', state.proofFile);
@@ -1909,13 +1931,21 @@ function closeEditModal() {
 
 async function handleLookupEdit(isRestoring = false) {
   const input = document.getElementById('edit-search-input');
+  const emailInput = document.getElementById('edit-search-email');
   const lookupBtn = document.getElementById('btn-lookup-edit');
   const form = document.getElementById('form-edit-team');
   const expiredBanner = document.getElementById('edit-deadline-expired-banner');
   const regId = input?.value.trim().toUpperCase();
+  const leaderEmail = emailInput?.value.trim().toLowerCase();
 
   if (!regId) {
     showToast('Please enter your Registration ID (e.g. CV26-TM-12345)', 'warning');
+    return;
+  }
+
+  if (!leaderEmail && !isRestoring) {
+    showToast('Please enter the Team Leader Email to verify authorization.', 'warning');
+    emailInput?.focus();
     return;
   }
 
@@ -1925,7 +1955,8 @@ async function handleLookupEdit(isRestoring = false) {
   }
 
   try {
-    const res = await fetch(`/api/team/edit-info/${encodeURIComponent(regId)}`);
+    const query = leaderEmail ? `?leaderEmail=${encodeURIComponent(leaderEmail)}` : '';
+    const res = await fetch(`/api/team/edit-info/${encodeURIComponent(regId)}${query}`);
     const data = await res.json();
 
     if (!res.ok || !data.success) {
@@ -2251,6 +2282,7 @@ async function handleSaveTeamEdit(e) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         registrationId: editState.registrationId,
+        leaderEmail,
         teamName,
         track,
         projectTitle,
