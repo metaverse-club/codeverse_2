@@ -3,7 +3,7 @@ const crypto = require('crypto');
 require('dotenv').config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.warn('⚠️ Supabase URL or Key is missing. Check your .env file.');
@@ -303,11 +303,11 @@ async function getAllTeams({ status = 'ALL', search = '', onlyCompleted = true }
   for (const row of results) {
     const { payments, ...teamData } = row;
     const paymentObj = Array.isArray(payments) ? payments[0] : payments;
-    
+
     if (onlyCompleted && (!paymentObj?.utr_number || !paymentObj?.proof_file_path)) continue;
 
     const { data: members } = await supabase.from('team_members').select('*').eq('team_id', teamData.id).order('is_leader', { ascending: false }).order('created_at', { ascending: true });
-    
+
     const mappedMembers = (members || []).map(mapMember);
     teams.push({
       ...mapTeam(teamData),
@@ -431,7 +431,7 @@ async function setSetting(key, value) {
   const valToSave = value === null ? '' : String(value);
   const { data: existing, error: selectError } = await supabase.from('app_settings').select('key').eq('key', key).limit(1).maybeSingle();
   if (selectError) throw new Error(selectError.message);
-  
+
   if (existing) {
     const { error } = await supabase.from('app_settings').update({ value: valToSave, updated_at: new Date().toISOString() }).eq('key', key);
     if (error) throw new Error(error.message);
