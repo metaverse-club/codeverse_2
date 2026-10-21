@@ -551,15 +551,6 @@ function bindEvents() {
   document.getElementById('btn-cancel-edit')?.addEventListener('click', closeEditModal);
   document.getElementById('btn-edit-cancel')?.addEventListener('click', closeEditModal);
   document.getElementById('btn-lookup-edit')?.addEventListener('click', handleLookupEdit);
-  document.getElementById('btn-edit-add-member')?.addEventListener('click', addEditMemberCard);
-  document.getElementById('btn-edit-remove-member')?.addEventListener('click', () => {
-    if (editState.members.length > 1) {
-      editState.members.pop();
-      renderEditMembers();
-    } else {
-      showToast('A team must have at least 2 members (1 leader + 1 member).', 'warning');
-    }
-  });
   document.getElementById('form-edit-team')?.addEventListener('submit', handleSaveTeamEdit);
 
   // Resume / Continue Registration bindings
@@ -2024,6 +2015,7 @@ async function handleLookupEdit(isRestoring = false) {
       collegeEmail: m.college_email || m.collegeEmail || '',
       phone: m.phone || ''
     }));
+    editState.originalMemberCount = 1 + editState.members.length;
 
     renderEditMembers();
     
@@ -2050,7 +2042,6 @@ function renderEditMembers() {
   if (!container) return;
 
   container.innerHTML = '';
-  const totalCount = 1 + editState.members.length;
 
   editState.members.forEach((member, index) => {
     const memberNum = index + 2; // Member 1 is Team Leader
@@ -2058,20 +2049,12 @@ function renderEditMembers() {
     card.className = 'member-card';
     card.id = `edit-card-${member.id}`;
 
-    const canRemove = totalCount > 2;
-
     card.innerHTML = `
       <div class="member-card-top">
         <div class="member-title-wrapper">
           <span class="member-idx">Member ${memberNum}</span>
         </div>
-        ${canRemove ? `
-          <button type="button" class="btn-remove-member btn-edit-remove-member" data-member-id="${member.id}">
-            🗑️ Remove
-          </button>
-        ` : `
-          <span class="input-hint" title="Minimum 2 members required">Mandatory (Min 2)</span>
-        `}
+        <span class="input-hint" style="color: rgba(255, 255, 255, 0.45); font-size: 0.8rem;">🔒 Fixed Member Slot</span>
       </div>
 
       <div class="form-grid-2">
@@ -2111,56 +2094,14 @@ function renderEditMembers() {
       }
     });
   });
-
-  // Attach remove button listeners
-  container.querySelectorAll('.btn-edit-remove-member').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const memberId = btn.getAttribute('data-member-id');
-      removeEditMemberCard(memberId);
-    });
-  });
-
-  // Update remaining slots and button state (2-5 members)
-  const slotsRemaining = 5 - totalCount;
-  const slotsEl = document.getElementById('edit-slots-remaining');
-  if (slotsEl) slotsEl.textContent = Math.max(0, slotsRemaining);
-
-  const addBtn = document.getElementById('btn-edit-add-member');
-  if (addBtn) {
-    addBtn.disabled = totalCount >= 5;
-  }
 }
 
 function addEditMemberCard() {
-  const totalCount = 1 + editState.members.length;
-  if (totalCount >= 5) {
-    showToast('Maximum team size is 5 members.', 'warning');
-    return;
-  }
-
-  const newId = `edit_mem_${Date.now()}`;
-  editState.members.push({
-    id: newId,
-    fullName: '',
-    regNumber: '',
-    collegeEmail: '',
-    phone: ''
-  });
-
-  renderEditMembers();
-  showToast(`Member ${totalCount + 1} added to edit roster.`, 'info');
+  showToast('Team size is fixed based on your paid registration. Adding or removing members is not permitted.', 'warning');
 }
 
-function removeEditMemberCard(memberId) {
-  const totalCount = 1 + editState.members.length;
-  if (totalCount <= 2) {
-    showToast('Minimum team size is 2 members. Cannot remove further.', 'warning');
-    return;
-  }
-
-  editState.members = editState.members.filter(m => m.id !== memberId);
-  renderEditMembers();
-  showToast('Member removed from roster.', 'info');
+function removeEditMemberCard() {
+  showToast('Team size is fixed based on your paid registration. Adding or removing members is not permitted.', 'warning');
 }
 
 async function handleSaveTeamEdit(e) {
@@ -2204,8 +2145,12 @@ async function handleSaveTeamEdit(e) {
     return;
   }
 
-  // 2. Validate member count (2 to 5 members)
+  // 2. Validate member count
   const totalMembersCount = 1 + editState.members.length;
+  if (editState.originalMemberCount && totalMembersCount !== editState.originalMemberCount) {
+    showToast(`Team size cannot be modified (${editState.originalMemberCount} members were registered and paid for).`, 'warning');
+    return;
+  }
   if (totalMembersCount < 2 || totalMembersCount > 5) {
     showToast(`Team must have between 2 and 5 members (1 Leader + 1 to 4 Members). Currently ${totalMembersCount}.`, 'warning');
     return;

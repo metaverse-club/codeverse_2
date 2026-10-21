@@ -298,6 +298,15 @@ app.put('/api/team/update', async (req, res) => {
       });
     }
 
+    // 3. Strictly prevent modifying team member count (since registration fee is paid per tier)
+    const existingMemberCount = team.memberCount || (team.members ? team.members.length : 0);
+    if (Array.isArray(members) && existingMemberCount > 0 && members.length !== existingMemberCount) {
+      return res.status(400).json({
+        success: false,
+        error: `Team size is permanently fixed at ${existingMemberCount} members based on your completed registration and payment. Adding or removing members is not allowed.`
+      });
+    }
+
     const updatedTeam = await db.updateTeamDetails({
       registrationId: registrationId.trim(),
       teamName,

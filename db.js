@@ -200,6 +200,9 @@ async function updateTeamDetails({ registrationId, teamName, track, projectTitle
   }).eq('id', team.id);
 
   if (members && Array.isArray(members) && members.length > 0) {
+    if (team.memberCount && members.length !== team.memberCount) {
+      throw new Error(`Team size is fixed at ${team.memberCount} members based on paid registration. Adding or removing members is not allowed.`);
+    }
     if (members.length < 2 || members.length > 5) throw new Error('A team must have between 2 and 5 members.');
     const leaderCount = members.filter(m => m.isLeader).length;
     if (leaderCount !== 1) throw new Error('Exactly one member must be designated as the Team Leader.');
