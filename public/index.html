@@ -717,12 +717,12 @@
         <!-- Lookup Step -->
         <div id="edit-lookup-zone" class="edit-lookup-box">
           <p class="modal-desc">
-            Enter your official <strong>Registration ID</strong> (e.g. <code>CV26-TM-48291</code>) to unlock your
-            editable profile.
+            Enter your official <strong>Registration ID</strong> (e.g. <code>CV26-TM-48291</code>) and <strong>Team Leader's Email</strong> to securely load and edit your team roster.
           </p>
-          <div class="lookup-input-row">
-            <input type="text" id="edit-search-input" class="form-input monospace" placeholder="CV26-TM-XXXXX"
+          <div class="lookup-input-row" style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="text" id="edit-search-input" class="form-input monospace" placeholder="CV26-TM-XXXXX" style="flex: 1; min-width: 160px;"
               autocomplete="off">
+            <input type="email" id="edit-search-email" class="form-input" placeholder="Leader College Email" style="flex: 1.5; min-width: 200px;" required>
             <button type="button" class="btn btn-primary" id="btn-lookup-edit">Unlock Profile</button>
           </div>
         </div>
