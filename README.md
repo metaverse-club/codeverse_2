@@ -65,7 +65,7 @@ npm run dev
 * **Organizer Admin Dashboard**: [http://localhost:3000/admin.html](http://localhost:3000/admin.html)
 
 ---
-
+deadline 14 nov
 ## 🗄️ Database Schema & Architecture
 
 The database is powered by high-performance SQLite (`data/codeverse.db`) in WAL mode with foreign key enforcement:
