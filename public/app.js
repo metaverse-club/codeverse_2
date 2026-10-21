@@ -80,6 +80,7 @@ function initTurnstile() {
         turnstileWidgetId = window.turnstile.render('#cf-turnstile-container', {
           sitekey: siteKey,
           theme: 'dark',
+          size: 'flexible',
           callback: function (token) {
             currentTurnstileToken = token;
             const tokenInput = document.getElementById('turnstile-token');
