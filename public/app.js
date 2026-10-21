@@ -60,6 +60,57 @@ const editState = {
   isDeadlinePassed: false
 };
 
+// Cloudflare Turnstile anti-bot security
+let turnstileWidgetId = null;
+let currentTurnstileToken = null;
+
+function initTurnstile() {
+  const container = document.getElementById('cf-turnstile-container');
+  if (!container) return;
+
+  const siteKey = (state.hackathonConfig && state.hackathonConfig.turnstileSiteKey) || '1x00000000000000000000AA';
+
+  const renderWidget = () => {
+    if (window.turnstile && typeof window.turnstile.render === 'function') {
+      if (turnstileWidgetId !== null) {
+        try { window.turnstile.remove(turnstileWidgetId); } catch (e) {}
+        turnstileWidgetId = null;
+      }
+      try {
+        turnstileWidgetId = window.turnstile.render('#cf-turnstile-container', {
+          sitekey: siteKey,
+          theme: 'dark',
+          callback: function (token) {
+            currentTurnstileToken = token;
+            const tokenInput = document.getElementById('turnstile-token');
+            if (tokenInput) tokenInput.value = token;
+          },
+          'expired-callback': function () {
+            currentTurnstileToken = null;
+            const tokenInput = document.getElementById('turnstile-token');
+            if (tokenInput) tokenInput.value = '';
+          },
+          'error-callback': function () {
+            currentTurnstileToken = null;
+            const tokenInput = document.getElementById('turnstile-token');
+            if (tokenInput) tokenInput.value = '';
+          }
+        });
+      } catch (err) {
+        console.warn('[TURNSTILE] Failed to render widget:', err);
+      }
+    } else {
+      setTimeout(renderWidget, 250);
+    }
+  };
+
+  renderWidget();
+}
+
+window.onloadTurnstileCallback = function () {
+  initTurnstile();
+};
+
 // DOM Ready
 document.addEventListener('DOMContentLoaded', async () => {
   initApp();
@@ -67,6 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initApp() {
   await fetchConfig();
+  initTurnstile();
   renderMembers();
   updateMemberCounter();
   bindEvents();
@@ -327,6 +379,13 @@ function initOTPLogic() {
       return;
     }
 
+    const tokenInput = document.getElementById('turnstile-token');
+    const turnstileToken = (tokenInput && tokenInput.value) || currentTurnstileToken;
+    if (!turnstileToken && window.turnstile && document.getElementById('cf-turnstile-container')) {
+      showToast('Please complete the security verification before requesting an OTP.', 'warning');
+      return;
+    }
+
     sendBtn.disabled = true;
     sendBtn.textContent = 'Sending...';
 
@@ -334,7 +393,7 @@ function initOTPLogic() {
       const response = await fetch('/api/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, turnstileToken })
       });
       const data = await response.json();
 
@@ -384,14 +443,29 @@ function initOTPLogic() {
             clearInterval(interval);
             sendBtn.disabled = false;
             sendBtn.textContent = 'Resend OTP';
+            if (window.turnstile && turnstileWidgetId !== null) {
+              try { window.turnstile.reset(turnstileWidgetId); } catch (e) {}
+              currentTurnstileToken = null;
+              if (tokenInput) tokenInput.value = '';
+            }
           }
         }, 1000);
       } else {
+        if (window.turnstile && turnstileWidgetId !== null) {
+          try { window.turnstile.reset(turnstileWidgetId); } catch (e) {}
+          currentTurnstileToken = null;
+          if (tokenInput) tokenInput.value = '';
+        }
         showToast(data.error || 'Failed to send OTP.', 'error');
         sendBtn.disabled = false;
         sendBtn.textContent = 'Send OTP';
       }
     } catch (err) {
+      if (window.turnstile && turnstileWidgetId !== null) {
+        try { window.turnstile.reset(turnstileWidgetId); } catch (e) {}
+        currentTurnstileToken = null;
+        if (tokenInput) tokenInput.value = '';
+      }
       console.error(err);
       showToast('An error occurred while sending OTP.', 'error');
       sendBtn.disabled = false;

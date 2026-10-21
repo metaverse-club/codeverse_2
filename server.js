@@ -150,6 +150,59 @@ const HACKATHON_CONFIG = {
   }
 };
 
+/**
+ * Cloudflare Turnstile Verification Helper
+ * Verifies the human response token with Cloudflare's siteverify endpoint.
+ * In development, if test keys are used (e.g. 1x0000000000000000000000000000000AA),
+ * Cloudflare's server validates and passes automatically.
+ */
+async function verifyTurnstileToken(token, remoteIp) {
+  const secretKey = process.env.TURNSTILE_SECRET_KEY;
+
+  if (!secretKey) {
+    console.warn('[TURNSTILE] TURNSTILE_SECRET_KEY not set in .env. Allowing request in local dev mode.');
+    return { success: true, devMode: true };
+  }
+
+  if (!token || typeof token !== 'string' || !token.trim()) {
+    return {
+      success: false,
+      error: 'Security verification required: Please complete the Cloudflare bot verification check before requesting an OTP.'
+    };
+  }
+
+  try {
+    const formData = new URLSearchParams();
+    formData.append('secret', secretKey.trim());
+    formData.append('response', token.trim());
+    if (remoteIp) {
+      formData.append('remoteip', remoteIp);
+    }
+
+    const cfRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formData.toString()
+    });
+
+    const cfData = await cfRes.json();
+    if (!cfData.success) {
+      console.warn('[TURNSTILE VERIFY FAILED]:', cfData['error-codes'] || cfData);
+      return {
+        success: false,
+        error: 'Cloudflare security verification failed or expired. Please refresh the check and try again.'
+      };
+    }
+
+    return { success: true, cfData };
+  } catch (err) {
+    console.error('[TURNSTILE SERVICE ERROR]:', err.message);
+    return { success: false, error: 'Security verification service temporarily unreachable. Please try again.' };
+  }
+}
+
 // ----------------- API ROUTES -----------------
 
 /**
@@ -184,6 +237,7 @@ app.get('/api/config', async (req, res) => {
       success: true,
       config: {
         ...HACKATHON_CONFIG,
+        turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '1x00000000000000000000AA',
         editDeadline,
         isEditDeadlinePassed,
         registrationDeadline,
@@ -331,13 +385,22 @@ app.put('/api/team/update', async (req, res) => {
  */
 app.post('/api/send-otp', otpLimiter, async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, turnstileToken } = req.body;
     if (!email || !email.trim()) {
       return res.status(400).json({ success: false, error: 'Email is required.' });
     }
 
     if (containsMaliciousHtml(email)) {
       return res.status(400).json({ success: false, error: 'Invalid characters in email.' });
+    }
+
+    // Cloudflare Turnstile anti-bot verification
+    const turnstileCheck = await verifyTurnstileToken(turnstileToken, req.ip);
+    if (!turnstileCheck.success) {
+      return res.status(403).json({
+        success: false,
+        error: turnstileCheck.error || 'Bot verification failed. Please complete the security check.'
+      });
     }
 
     if (!process.env.GOOGLE_SCRIPT_URL && (!process.env.EMAIL_USER || !process.env.EMAIL_PASS)) {
