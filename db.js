@@ -11,6 +11,21 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+const path = require('path');
+const fs = require('fs');
+
+// Local SQLite synchronization
+let sqliteDb = null;
+try {
+  const { DatabaseSync } = require('node:sqlite');
+  const dbPath = path.join(__dirname, 'data', 'codeverse.db');
+  if (fs.existsSync(dbPath)) {
+    sqliteDb = new DatabaseSync(dbPath);
+  }
+} catch (e) {
+  console.warn('[DB] SQLite sync running with in-memory/optional mode');
+}
+
 // Helper functions to map Supabase snake_case to app camelCase
 function mapTeam(row) {
   if (!row) return null;
@@ -27,8 +42,12 @@ function mapTeam(row) {
   };
 }
 
-function mapMember(row) {
+function mapMember(row, residenceMetadata = {}) {
   if (!row) return null;
+  const regKey = (row.reg_number || '').trim().toUpperCase();
+  const emailKey = (row.college_email || '').trim().toLowerCase();
+  const meta = residenceMetadata[regKey] || residenceMetadata[emailKey] || {};
+
   return {
     id: row.id,
     teamId: row.team_id,
@@ -37,8 +56,105 @@ function mapMember(row) {
     collegeEmail: row.college_email,
     phone: row.phone,
     isLeader: row.is_leader === true || row.is_leader === 'true' || row.is_leader === 1,
+    residenceType: row.residence_type || meta.residenceType || 'HOSTELLER',
+    hostelBlock: row.hostel_block || meta.hostelBlock || '',
+    roomNo: row.room_no || meta.roomNo || '',
+    hostelDetails: row.hostel_details || meta.hostelDetails || '',
+    dayScholarType: row.day_scholar_type || meta.dayScholarType || '',
+    dayScholarLocation: row.day_scholar_location || meta.dayScholarLocation || '',
+    residenceAddress: row.residence_address || meta.residenceAddress || '',
+    commuteMode: row.commute_mode || meta.commuteMode || '',
     createdAt: row.created_at
   };
+}
+
+async function saveTeamResidenceMetadata(teamId, members = []) {
+  if (!teamId || !Array.isArray(members)) return;
+  const metaObj = {};
+  for (const m of members) {
+    const regKey = (m.regNumber || m.reg_number || '').trim().toUpperCase();
+    if (regKey) {
+      metaObj[regKey] = {
+        residenceType: m.residenceType || m.residence_type || 'HOSTELLER',
+        hostelBlock: m.hostelBlock || m.hostel_block || '',
+        roomNo: m.roomNo || m.room_no || '',
+        hostelDetails: m.hostelDetails || m.hostel_details || '',
+        dayScholarType: m.dayScholarType || m.day_scholar_type || '',
+        dayScholarLocation: m.dayScholarLocation || m.day_scholar_location || '',
+        residenceAddress: m.residenceAddress || m.residence_address || '',
+        commuteMode: m.commuteMode || m.commute_mode || ''
+      };
+    }
+  }
+
+  // 1. Save in Supabase app_settings
+  try {
+    await setSetting(`residence_team_${teamId}`, JSON.stringify(metaObj));
+  } catch (err) {
+    console.warn('[DB] Failed to save residence in app_settings:', err.message);
+  }
+
+  // 2. Also sync to local SQLite
+  try {
+    if (sqliteDb) {
+      for (const m of members) {
+        const reg = (m.regNumber || m.reg_number || '').trim().toUpperCase();
+        const resType = m.residenceType || m.residence_type || 'HOSTELLER';
+        const hBlock = m.hostelBlock || m.hostel_block || '';
+        const rNo = m.roomNo || m.room_no || '';
+        const hDetails = m.hostelDetails || m.hostel_details || '';
+        const dsType = m.dayScholarType || m.day_scholar_type || '';
+        const dsLoc = m.dayScholarLocation || m.day_scholar_location || '';
+        const rAddr = m.residenceAddress || m.residence_address || '';
+        const cMode = m.commuteMode || m.commute_mode || '';
+
+        sqliteDb.prepare(`
+          UPDATE team_members
+          SET residence_type = ?, hostel_block = ?, room_no = ?, hostel_details = ?,
+              day_scholar_type = ?, day_scholar_location = ?, residence_address = ?, commute_mode = ?
+          WHERE UPPER(reg_number) = ?
+        `).run(resType, hBlock, rNo, hDetails, dsType, dsLoc, rAddr, cMode, reg);
+      }
+    }
+  } catch (sqlErr) {
+    console.warn('[DB] SQLite sync error:', sqlErr.message);
+  }
+}
+
+async function getTeamResidenceMetadata(teamId) {
+  if (!teamId) return {};
+  try {
+    const raw = await getSetting(`residence_team_${teamId}`, null);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {}
+
+  // Check SQLite fallback
+  if (sqliteDb) {
+    try {
+      const rows = sqliteDb.prepare(`SELECT * FROM team_members WHERE team_id = ?`).all(teamId);
+      if (rows && rows.length > 0) {
+        const meta = {};
+        for (const r of rows) {
+          if (r.reg_number) {
+            meta[r.reg_number.toUpperCase()] = {
+              residenceType: r.residence_type,
+              hostelBlock: r.hostel_block,
+              roomNo: r.room_no,
+              hostelDetails: r.hostel_details,
+              dayScholarType: r.day_scholar_type,
+              dayScholarLocation: r.day_scholar_location,
+              residenceAddress: r.residence_address,
+              commuteMode: r.commute_mode
+            };
+          }
+        }
+        return meta;
+      }
+    } catch (e) {}
+  }
+  return {};
 }
 
 function mapPayment(row) {
@@ -114,17 +230,75 @@ async function createTeam({ teamName, track, projectTitle, members }) {
 
   if (teamError) throw new Error('Failed to create team: ' + teamError.message);
 
-  const membersToInsert = members.map(m => ({
+  const fullMembersToInsert = members.map(m => ({
     team_id: team.id,
     full_name: m.fullName.trim(),
     reg_number: m.regNumber.trim().toUpperCase(),
     college_email: m.collegeEmail.trim().toLowerCase(),
     phone: m.phone.trim(),
-    is_leader: m.isLeader
+    is_leader: m.isLeader,
+    residence_type: m.residenceType || 'HOSTELLER',
+    hostel_block: m.hostelBlock || '',
+    room_no: m.roomNo || '',
+    hostel_details: m.hostelDetails || '',
+    day_scholar_type: m.dayScholarType || '',
+    day_scholar_location: m.dayScholarLocation || '',
+    residence_address: m.residenceAddress || '',
+    commute_mode: m.commuteMode || ''
   }));
 
-  const { error: membersError } = await supabase.from('team_members').insert(membersToInsert);
-  if (membersError) throw new Error('Failed to add members: ' + membersError.message);
+  const { error: fullMembersError } = await supabase.from('team_members').insert(fullMembersToInsert);
+  if (fullMembersError) {
+    // If Supabase schema does not have the residence columns yet
+    const baseMembersToInsert = members.map(m => ({
+      team_id: team.id,
+      full_name: m.fullName.trim(),
+      reg_number: m.regNumber.trim().toUpperCase(),
+      college_email: m.collegeEmail.trim().toLowerCase(),
+      phone: m.phone.trim(),
+      is_leader: m.isLeader
+    }));
+    const { error: baseError } = await supabase.from('team_members').insert(baseMembersToInsert);
+    if (baseError) throw new Error('Failed to add members: ' + baseError.message);
+  }
+
+  // Always save residence metadata backup
+  await saveTeamResidenceMetadata(team.id, members);
+
+  // Sync into local SQLite if available
+  if (sqliteDb) {
+    try {
+      sqliteDb.prepare(`
+        INSERT OR REPLACE INTO teams (id, registration_id, team_name, track, project_title, member_count, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(team.id, registrationId, teamName.trim(), track || 'Open Innovation', projectTitle || '', members.length, 'PENDING_PAYMENT', new Date().toISOString(), new Date().toISOString());
+
+      for (const m of members) {
+        sqliteDb.prepare(`
+          INSERT OR REPLACE INTO team_members (team_id, full_name, reg_number, college_email, phone, is_leader, residence_type, hostel_block, room_no, hostel_details, day_scholar_type, day_scholar_location, residence_address, commute_mode, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          team.id,
+          m.fullName.trim(),
+          m.regNumber.trim().toUpperCase(),
+          m.collegeEmail.trim().toLowerCase(),
+          m.phone.trim(),
+          m.isLeader ? 1 : 0,
+          m.residenceType || 'HOSTELLER',
+          m.hostelBlock || '',
+          m.roomNo || '',
+          m.hostelDetails || '',
+          m.dayScholarType || '',
+          m.dayScholarLocation || '',
+          m.residenceAddress || '',
+          m.commuteMode || '',
+          new Date().toISOString()
+        );
+      }
+    } catch (e) {
+      console.warn('[DB] Local SQLite write notice:', e.message);
+    }
+  }
 
   return await getTeamByRegistrationId(registrationId);
 }
@@ -136,7 +310,8 @@ async function getTeamByRegistrationId(registrationId) {
   const { data: members } = await supabase.from('team_members').select('*').eq('team_id', team.id).order('is_leader', { ascending: false }).order('created_at', { ascending: true });
   const { data: payment } = await supabase.from('payments').select('*').eq('team_id', team.id).limit(1).maybeSingle();
 
-  const mappedMembers = (members || []).map(mapMember);
+  const resMeta = await getTeamResidenceMetadata(team.id);
+  const mappedMembers = (members || []).map(m => mapMember(m, resMeta));
   return {
     ...mapTeam(team),
     members: mappedMembers,
@@ -220,16 +395,36 @@ async function updateTeamDetails({ registrationId, teamName, track, projectTitle
 
     await supabase.from('team_members').delete().eq('team_id', team.id);
 
-    const membersToInsert = members.map(m => ({
+    const fullMembersToInsert = members.map(m => ({
       team_id: team.id,
       full_name: m.fullName.trim(),
       reg_number: m.regNumber.trim().toUpperCase(),
       college_email: m.collegeEmail.trim().toLowerCase(),
       phone: m.phone.trim(),
-      is_leader: m.isLeader
+      is_leader: m.isLeader,
+      residence_type: m.residenceType || 'HOSTELLER',
+      hostel_block: m.hostelBlock || '',
+      room_no: m.roomNo || '',
+      hostel_details: m.hostelDetails || '',
+      day_scholar_type: m.dayScholarType || '',
+      day_scholar_location: m.dayScholarLocation || '',
+      residence_address: m.residenceAddress || '',
+      commute_mode: m.commuteMode || ''
     }));
 
-    await supabase.from('team_members').insert(membersToInsert);
+    const { error: fullInsertError } = await supabase.from('team_members').insert(fullMembersToInsert);
+    if (fullInsertError) {
+      const baseMembersToInsert = members.map(m => ({
+        team_id: team.id,
+        full_name: m.fullName.trim(),
+        reg_number: m.regNumber.trim().toUpperCase(),
+        college_email: m.collegeEmail.trim().toLowerCase(),
+        phone: m.phone.trim(),
+        is_leader: m.isLeader
+      }));
+      await supabase.from('team_members').insert(baseMembersToInsert);
+    }
+    await saveTeamResidenceMetadata(team.id, members);
     await supabase.from('teams').update({ member_count: members.length }).eq('id', team.id);
   }
 
@@ -311,7 +506,8 @@ async function getAllTeams({ status = 'ALL', search = '', onlyCompleted = true }
 
     const { data: members } = await supabase.from('team_members').select('*').eq('team_id', teamData.id).order('is_leader', { ascending: false }).order('created_at', { ascending: true });
 
-    const mappedMembers = (members || []).map(mapMember);
+    const resMeta = await getTeamResidenceMetadata(teamData.id);
+    const mappedMembers = (members || []).map(m => mapMember(m, resMeta));
     teams.push({
       ...mapTeam(teamData),
       payment: mapPayment(paymentObj),
@@ -372,15 +568,36 @@ async function adminUpdateTeam({ registrationId, teamName, track, projectTitle, 
 
   if (members && Array.isArray(members) && members.length > 0) {
     await supabase.from('team_members').delete().eq('team_id', team.id);
-    const membersToInsert = members.map(m => ({
+    const fullMembersToInsert = members.map(m => ({
       team_id: team.id,
       full_name: m.fullName.trim(),
       reg_number: m.regNumber.trim().toUpperCase(),
       college_email: m.collegeEmail.trim().toLowerCase(),
       phone: m.phone.trim(),
-      is_leader: m.isLeader
+      is_leader: m.isLeader,
+      residence_type: m.residenceType || 'HOSTELLER',
+      hostel_block: m.hostelBlock || '',
+      room_no: m.roomNo || '',
+      hostel_details: m.hostelDetails || '',
+      day_scholar_type: m.dayScholarType || '',
+      day_scholar_location: m.dayScholarLocation || '',
+      residence_address: m.residenceAddress || '',
+      commute_mode: m.commuteMode || ''
     }));
-    await supabase.from('team_members').insert(membersToInsert);
+
+    const { error: fullInsertError } = await supabase.from('team_members').insert(fullMembersToInsert);
+    if (fullInsertError) {
+      const baseMembersToInsert = members.map(m => ({
+        team_id: team.id,
+        full_name: m.fullName.trim(),
+        reg_number: m.regNumber.trim().toUpperCase(),
+        college_email: m.collegeEmail.trim().toLowerCase(),
+        phone: m.phone.trim(),
+        is_leader: m.isLeader
+      }));
+      await supabase.from('team_members').insert(baseMembersToInsert);
+    }
+    await saveTeamResidenceMetadata(team.id, members);
     await supabase.from('teams').update({ member_count: members.length }).eq('id', team.id);
   }
 

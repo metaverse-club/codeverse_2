@@ -325,7 +325,9 @@ app.put('/api/team/update', async (req, res) => {
 
     if (Array.isArray(members)) {
       for (const m of members) {
-        if (containsMaliciousHtml(m.fullName) || containsMaliciousHtml(m.regNumber)) {
+        if (containsMaliciousHtml(m.fullName) || containsMaliciousHtml(m.regNumber) ||
+            containsMaliciousHtml(m.hostelBlock) || containsMaliciousHtml(m.roomNo) ||
+            containsMaliciousHtml(m.dayScholarLocation) || containsMaliciousHtml(m.residenceAddress)) {
           return res.status(400).json({ success: false, error: 'HTML tags or script injections are not allowed in member details.' });
         }
       }
@@ -553,7 +555,9 @@ app.post('/api/register', registrationLimiter, async (req, res) => {
         return res.status(400).json({ success: false, error: `Member ${i + 1}: Valid 10-digit phone number is required.` });
       }
 
-      if (containsMaliciousHtml(m.fullName) || containsMaliciousHtml(m.regNumber)) {
+      if (containsMaliciousHtml(m.fullName) || containsMaliciousHtml(m.regNumber) ||
+          containsMaliciousHtml(m.hostelBlock) || containsMaliciousHtml(m.roomNo) ||
+          containsMaliciousHtml(m.dayScholarLocation) || containsMaliciousHtml(m.residenceAddress)) {
         return res.status(400).json({ success: false, error: `Member ${i + 1}: HTML tags or script injections are not allowed.` });
       }
     }
@@ -822,8 +826,12 @@ app.post('/api/registration/pay-later', async (req, res) => {
 // ----------------- ADMIN AUTHENTICATION & SECURITY -----------------
 
 const ADMIN_CREDENTIALS = {
-  username: process.env.ADMIN_USERNAME,
-  password: process.env.ADMIN_PASSWORD
+  get username() {
+    return (process.env.ADMIN_USERNAME || '').trim();
+  },
+  get password() {
+    return (process.env.ADMIN_PASSWORD || '').trim();
+  }
 };
 
 // In-memory set of active admin session tokens
@@ -856,15 +864,17 @@ function requireAdminAuth(req, res, next) {
 
 /**
  * POST /api/admin/login
- * Authenticates admin credentials with strict configuration verification
+ * Authenticates admin credentials with dynamic .env reload and trim verification
  */
 app.post('/api/admin/login', (req, res) => {
-  if (
-    typeof ADMIN_CREDENTIALS.username !== 'string' ||
-    !ADMIN_CREDENTIALS.username.trim() ||
-    typeof ADMIN_CREDENTIALS.password !== 'string' ||
-    !ADMIN_CREDENTIALS.password.trim()
-  ) {
+  try {
+    require('dotenv').config({ override: true });
+  } catch (e) {}
+
+  const expectedUser = ADMIN_CREDENTIALS.username;
+  const expectedPass = ADMIN_CREDENTIALS.password;
+
+  if (!expectedUser || !expectedPass) {
     console.error('[SECURITY ALERT] Admin credentials are not configured in environment variables.');
     return res.status(503).json({
       success: false,
@@ -873,21 +883,24 @@ app.post('/api/admin/login', (req, res) => {
   }
 
   const { username, password } = req.body || {};
-  if (!username || !password) {
+  const inputUser = (username || '').trim();
+  const inputPass = (password || '').trim();
+
+  if (!inputUser || !inputPass) {
     return res.status(400).json({
       success: false,
       error: 'Username and password are required.'
     });
   }
 
-  if (username.trim() === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+  if (inputUser === expectedUser && inputPass === expectedPass) {
     const token = `meta_tok_${crypto.randomBytes(32).toString('hex')}`;
     adminSessions.add(token);
     return res.json({
       success: true,
       message: 'Admin authenticated successfully.',
       token,
-      username: ADMIN_CREDENTIALS.username
+      username: expectedUser
     });
   }
   return res.status(401).json({
@@ -1094,14 +1107,26 @@ app.get(['/api/admin/export', '/api/admin/export-excel'], requireAdminAuth, asyn
 app.get('/api/admin/export-csv', requireAdminAuth, async (req, res) => {
   try {
     const teams = await db.getAllTeams();
+    const formatResidence = (m) => {
+      if (!m || !m.fullName) return 'N/A';
+      if ((m.residenceType || m.residence_type) === 'DAY_SCHOLAR') {
+        const type = (m.dayScholarType || m.day_scholar_type) === 'LOCAL' ? 'Local' : 'Non-Local';
+        const loc = m.dayScholarLocation || m.day_scholar_location || '';
+        const addr = m.residenceAddress || m.residence_address || '';
+        return `Day Scholar [${type}] - ${loc} (${addr})`.trim();
+      }
+      const block = m.hostelBlock || m.hostel_block || '';
+      const room = m.roomNo || m.room_no || '';
+      return `Hosteller - ${block} Rm:${room}`.trim();
+    };
+
     const headers = [
       'Registration ID', 'Team Name', 'Track', 'Member Count', 'Status',
-      'Leader Name', 'Leader Email', 'Leader Phone', 'Leader Reg No',
-      'Member 2 Name', 'Member 2 Reg No', 'Member 2 Email', 'Member 2 Phone',
-      'Member 3 Name', 'Member 3 Reg No', 'Member 3 Email', 'Member 3 Phone',
-      'Member 4 Name', 'Member 4 Reg No', 'Member 4 Email', 'Member 4 Phone',
-      'Member 5 Name', 'Member 5 Reg No', 'Member 5 Email', 'Member 5 Phone',
-      'Member 6 Name', 'Member 6 Reg No', 'Member 6 Email', 'Member 6 Phone',
+      'Leader Name', 'Leader Email', 'Leader Phone', 'Leader Reg No', 'Leader Residence',
+      'Member 2 Name', 'Member 2 Reg No', 'Member 2 Email', 'Member 2 Phone', 'Member 2 Residence',
+      'Member 3 Name', 'Member 3 Reg No', 'Member 3 Email', 'Member 3 Phone', 'Member 3 Residence',
+      'Member 4 Name', 'Member 4 Reg No', 'Member 4 Email', 'Member 4 Phone', 'Member 4 Residence',
+      'Member 5 Name', 'Member 5 Reg No', 'Member 5 Email', 'Member 5 Phone', 'Member 5 Residence',
       'Payment Method', 'UTR Number', 'Amount Paid', 'Transaction Date',
       'Payment Status', 'Proof Link', 'Admin Notes', 'Created At'
     ];
@@ -1114,7 +1139,6 @@ app.get('/api/admin/export-csv', requireAdminAuth, async (req, res) => {
       const m3 = nonLeaders[1] || {};
       const m4 = nonLeaders[2] || {};
       const m5 = nonLeaders[3] || {};
-      const m6 = nonLeaders[4] || {};
       const payment = t.payment || {};
 
       return [
@@ -1127,17 +1151,17 @@ app.get('/api/admin/export-csv', requireAdminAuth, async (req, res) => {
         `"${(leader.collegeEmail || '').replace(/"/g, '""')}"`,
         `"${(leader.phone || '').replace(/"/g, '""')}"`,
         `"${(leader.regNumber || '').replace(/"/g, '""')}"`,
-        `"${(m2.fullName || '').replace(/"/g, '""')}"`, `"${(m2.regNumber || '').replace(/"/g, '""')}"`, `"${(m2.collegeEmail || '').replace(/"/g, '""')}"`, `"${(m2.phone || '').replace(/"/g, '""')}"`,
-        `"${(m3.fullName || '').replace(/"/g, '""')}"`, `"${(m3.regNumber || '').replace(/"/g, '""')}"`, `"${(m3.collegeEmail || '').replace(/"/g, '""')}"`, `"${(m3.phone || '').replace(/"/g, '""')}"`,
-        `"${(m4.fullName || '').replace(/"/g, '""')}"`, `"${(m4.regNumber || '').replace(/"/g, '""')}"`, `"${(m4.collegeEmail || '').replace(/"/g, '""')}"`, `"${(m4.phone || '').replace(/"/g, '""')}"`,
-        `"${(m5.fullName || '').replace(/"/g, '""')}"`, `"${(m5.regNumber || '').replace(/"/g, '""')}"`, `"${(m5.collegeEmail || '').replace(/"/g, '""')}"`, `"${(m5.phone || '').replace(/"/g, '""')}"`,
-        `"${(m6.fullName || '').replace(/"/g, '""')}"`, `"${(m6.regNumber || '').replace(/"/g, '""')}"`, `"${(m6.collegeEmail || '').replace(/"/g, '""')}"`, `"${(m6.phone || '').replace(/"/g, '""')}"`,
+        `"${formatResidence(leader).replace(/"/g, '""')}"`,
+        `"${(m2.fullName || '').replace(/"/g, '""')}"`, `"${(m2.regNumber || '').replace(/"/g, '""')}"`, `"${(m2.collegeEmail || '').replace(/"/g, '""')}"`, `"${(m2.phone || '').replace(/"/g, '""')}"`, `"${formatResidence(m2).replace(/"/g, '""')}"`,
+        `"${(m3.fullName || '').replace(/"/g, '""')}"`, `"${(m3.regNumber || '').replace(/"/g, '""')}"`, `"${(m3.collegeEmail || '').replace(/"/g, '""')}"`, `"${(m3.phone || '').replace(/"/g, '""')}"`, `"${formatResidence(m3).replace(/"/g, '""')}"`,
+        `"${(m4.fullName || '').replace(/"/g, '""')}"`, `"${(m4.regNumber || '').replace(/"/g, '""')}"`, `"${(m4.collegeEmail || '').replace(/"/g, '""')}"`, `"${(m4.phone || '').replace(/"/g, '""')}"`, `"${formatResidence(m4).replace(/"/g, '""')}"`,
+        `"${(m5.fullName || '').replace(/"/g, '""')}"`, `"${(m5.regNumber || '').replace(/"/g, '""')}"`, `"${(m5.collegeEmail || '').replace(/"/g, '""')}"`, `"${(m5.phone || '').replace(/"/g, '""')}"`, `"${formatResidence(m5).replace(/"/g, '""')}"`,
         `"${payment.paymentMethod || 'N/A'}"`,
         `"${payment.utrNumber || 'N/A'}"`,
         payment.amountPaid || 0,
         `"${payment.transactionDate || 'N/A'}"`,
         `"${payment.status || 'N/A'}"`,
-        `"${payment.proofFilePath ? 'http://localhost:' + PORT + payment.proofFilePath : 'N/A'}"`,
+        `"${payment.proofFilePath ? payment.proofFilePath : 'N/A'}"`,
         `"${(payment.adminNotes || '').replace(/"/g, '""')}"`,
         `"${t.createdAt}"`
       ].join(',');

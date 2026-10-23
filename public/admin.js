@@ -807,6 +807,24 @@ async function confirmDeleteTeam(registrationId, teamName) {
 }
 
 /**
+ * Format residence information as a styled badge and details snippet for Admin
+ */
+function formatAdminResidence(m) {
+  if (!m) return '-';
+  const isHostel = (m.residenceType || m.residence_type) === 'HOSTELLER';
+  if (isHostel) {
+    const block = m.hostelBlock || m.hostel_block || 'Hostel';
+    const room = (m.roomNo || m.room_no) ? `Rm ${m.roomNo || m.room_no}` : '';
+    return `<span class="badge-residence badge-hostel">🏢 Hosteller</span><div class="text-xs text-muted" style="margin-top:2px;">${escapeHtml(block)} ${escapeHtml(room)}</div>`;
+  } else {
+    const type = (m.dayScholarType || m.day_scholar_type) === 'NON_LOCAL' ? 'Non-Local (PG)' : 'Local Commuter';
+    const loc = m.dayScholarLocation || m.day_scholar_location || '';
+    const addr = (m.residenceAddress || m.residence_address) ? `<div class="text-xs text-muted">${escapeHtml(m.residenceAddress || m.residence_address)}</div>` : '';
+    return `<span class="badge-residence badge-dayscholar">🚌 Day Scholar</span><div class="text-xs text-muted" style="margin-top:2px;">${escapeHtml(type)} • ${escapeHtml(loc)}</div>${addr}`;
+  }
+}
+
+/**
  * Open Detailed Team Inspection Modal
  */
 function openDetailModal(team) {
@@ -832,6 +850,7 @@ function openDetailModal(team) {
       <td class="monospace">
         <a href="tel:${escapeHtml(m.phone)}">${escapeHtml(m.phone)}</a>
       </td>
+      <td>${formatAdminResidence(m)}</td>
     </tr>
   `).join('');
 
@@ -928,6 +947,20 @@ function openAdminEditModal(team) {
     document.getElementById('edit-m5-phone').value = m5.phone || '';
   }
 
+  // Set residence inputs for all members
+  const memberArr = [m1, m2, m3, m4, m5];
+  memberArr.forEach((m, idx) => {
+    const num = idx + 1;
+    const typeEl = document.getElementById(`edit-m${num}-res-type`);
+    const blockEl = document.getElementById(`edit-m${num}-res-block`);
+    const roomEl = document.getElementById(`edit-m${num}-res-room`);
+
+    const resType = m.residenceType || m.residence_type || 'HOSTELLER';
+    if (typeEl) typeEl.value = resType;
+    if (blockEl) blockEl.value = resType === 'HOSTELLER' ? (m.hostelBlock || m.hostel_block || '') : (m.dayScholarLocation || m.day_scholar_location || '');
+    if (roomEl) roomEl.value = resType === 'HOSTELLER' ? (m.roomNo || m.room_no || '') : (m.residenceAddress || m.residence_address || '');
+  });
+
   // Set payment
   const p = team.payment || {};
   document.getElementById('edit-pay-utr').value = p.utrNumber || '';
@@ -956,12 +989,43 @@ async function handleAdminEditSubmit(e) {
     saveBtn.textContent = 'Saving Updates...';
   }
 
+  const getMemberResidence = (idx) => {
+    const resType = document.getElementById(`edit-m${idx}-res-type`)?.value || 'HOSTELLER';
+    const blockVal = document.getElementById(`edit-m${idx}-res-block`)?.value.trim() || '';
+    const roomVal = document.getElementById(`edit-m${idx}-res-room`)?.value.trim() || '';
+
+    if (resType === 'HOSTELLER') {
+      return {
+        residenceType: 'HOSTELLER',
+        hostelBlock: blockVal,
+        roomNo: roomVal,
+        hostelDetails: '',
+        dayScholarType: 'LOCAL',
+        dayScholarLocation: '',
+        residenceAddress: '',
+        commuteMode: ''
+      };
+    } else {
+      return {
+        residenceType: 'DAY_SCHOLAR',
+        hostelBlock: '',
+        roomNo: '',
+        hostelDetails: '',
+        dayScholarType: 'LOCAL',
+        dayScholarLocation: blockVal,
+        residenceAddress: roomVal,
+        commuteMode: ''
+      };
+    }
+  };
+
   const rawMembers = [
     {
       fullName: document.getElementById('edit-m1-name').value.trim(),
       regNumber: document.getElementById('edit-m1-reg').value.trim(),
       collegeEmail: document.getElementById('edit-m1-email').value.trim(),
       phone: document.getElementById('edit-m1-phone').value.trim(),
+      ...getMemberResidence(1),
       isLeader: true
     },
     {
@@ -969,6 +1033,7 @@ async function handleAdminEditSubmit(e) {
       regNumber: document.getElementById('edit-m2-reg').value.trim(),
       collegeEmail: document.getElementById('edit-m2-email').value.trim(),
       phone: document.getElementById('edit-m2-phone').value.trim(),
+      ...getMemberResidence(2),
       isLeader: false
     },
     {
@@ -976,6 +1041,7 @@ async function handleAdminEditSubmit(e) {
       regNumber: document.getElementById('edit-m3-reg')?.value.trim() || '',
       collegeEmail: document.getElementById('edit-m3-email')?.value.trim() || '',
       phone: document.getElementById('edit-m3-phone')?.value.trim() || '',
+      ...getMemberResidence(3),
       isLeader: false
     },
     {
@@ -983,6 +1049,7 @@ async function handleAdminEditSubmit(e) {
       regNumber: document.getElementById('edit-m4-reg')?.value.trim() || '',
       collegeEmail: document.getElementById('edit-m4-email')?.value.trim() || '',
       phone: document.getElementById('edit-m4-phone')?.value.trim() || '',
+      ...getMemberResidence(4),
       isLeader: false
     },
     {
@@ -990,6 +1057,7 @@ async function handleAdminEditSubmit(e) {
       regNumber: document.getElementById('edit-m5-reg')?.value.trim() || '',
       collegeEmail: document.getElementById('edit-m5-email')?.value.trim() || '',
       phone: document.getElementById('edit-m5-phone')?.value.trim() || '',
+      ...getMemberResidence(5),
       isLeader: false
     }
   ];

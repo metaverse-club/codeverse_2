@@ -717,12 +717,14 @@
         <!-- Lookup Step -->
         <div id="edit-lookup-zone" class="edit-lookup-box">
           <p class="modal-desc">
-            Enter your official <strong>Registration ID</strong> (e.g. <code>CV26-TM-48291</code>) and <strong>Team Leader's Email</strong> to securely load and edit your team roster.
+            Enter your official <strong>Registration ID</strong> (e.g. <code>CV26-TM-48291</code>) and <strong>Team
+              Leader's Email</strong> to securely load and edit your team roster.
           </p>
           <div class="lookup-input-row" style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="text" id="edit-search-input" class="form-input monospace" placeholder="CV26-TM-XXXXX" style="flex: 1; min-width: 160px;"
-              autocomplete="off">
-            <input type="email" id="edit-search-email" class="form-input" placeholder="Leader College Email" style="flex: 1.5; min-width: 200px;" required>
+            <input type="text" id="edit-search-input" class="form-input monospace" placeholder="CV26-TM-XXXXX"
+              style="flex: 1; min-width: 160px;" autocomplete="off">
+            <input type="email" id="edit-search-email" class="form-input" placeholder="Leader College Email"
+              style="flex: 1.5; min-width: 200px;" required>
             <button type="button" class="btn btn-primary" id="btn-lookup-edit">Unlock Profile</button>
           </div>
         </div>
@@ -820,6 +822,63 @@
                 <input type="tel" id="edit-leader-phone" class="form-input" required maxlength="15">
               </div>
             </div>
+
+            <!-- Edit Leader Residence / Accommodation Section -->
+            <div class="residence-box" id="edit-leader-residence-box">
+              <div class="residence-header">
+                <span class="residence-title">
+                  <span>🏠</span> Accommodation & Residence Status <span class="required">*</span>
+                </span>
+              </div>
+
+              <div class="residence-type-selector">
+                <button type="button" class="residence-pill-btn hosteller active" id="btn-edit-leader-res-hosteller"
+                  data-target="edit-leader" data-type="HOSTELLER">
+                  <span>🏢</span> Hosteller
+                </button>
+                <button type="button" class="residence-pill-btn dayscholar" id="btn-edit-leader-res-dayscholar"
+                  data-target="edit-leader" data-type="DAY_SCHOLAR">
+                  <span>🚌</span> Day Scholar
+                </button>
+              </div>
+              <input type="hidden" id="edit-leader-residence-type" value="HOSTELLER">
+
+              <div class="residence-subform" id="edit-leader-hostel-container">
+                <div class="form-grid-2">
+                  <div class="form-group mb-0">
+                    <label for="edit-leader-hostel-block" class="form-label">Hostel Block</label>
+                    <input type="text" id="edit-leader-hostel-block" class="form-input"
+                      placeholder="e.g. Block 1 / Block 2">
+                  </div>
+                  <div class="form-group mb-0">
+                    <label for="edit-leader-room-no" class="form-label">Room Number</label>
+                    <input type="text" id="edit-leader-room-no" class="form-input" placeholder="e.g. 204">
+                  </div>
+                </div>
+              </div>
+
+              <div class="residence-subform hidden" id="edit-leader-dayscholar-container">
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="edit-leader-dayscholar-type" class="form-label">Scholar Category</label>
+                    <select id="edit-leader-dayscholar-type" class="form-input form-select">
+                      <option value="LOCAL">Local Resident</option>
+                      <option value="NON_LOCAL">Non-Local</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="edit-leader-dayscholar-location" class="form-label">City / Area / Town</label>
+                    <input type="text" id="edit-leader-dayscholar-location" class="form-input"
+                      placeholder="e.g. Bhopal">
+                  </div>
+                </div>
+                <div class="form-group mb-0">
+                  <label for="edit-leader-residence-address" class="form-label">Address / PG Name</label>
+                  <input type="text" id="edit-leader-residence-address" class="form-input"
+                    placeholder="e.g. Balaji PG, Kothri">
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Section 3: Dynamic Members (Fixed team roster based on paid registration) -->
@@ -827,7 +886,8 @@
             <span class="section-icon">👥</span> Squad Members Roster
           </div>
           <p style="font-size: 0.82rem; color: rgba(255, 255, 255, 0.55); margin-top: -6px; margin-bottom: 14px;">
-            🔒 Team size is fixed based on your completed payment. Member details can be updated, but members cannot be added or removed.
+            🔒 Team size is fixed based on your completed payment. Member details can be updated, but members cannot be
+            added or removed.
           </p>
 
           <div id="dynamic-edit-members-container" class="members-edit-list">

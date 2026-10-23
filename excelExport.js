@@ -59,30 +59,40 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
     { key: 'leaderRegNo', header: 'Leader Reg. / Roll No.', width: 22, align: 'center', category: 'TEAM LEADER (MEMBER 1)', catBg: COLORS.LEADER_BG },
     { key: 'leaderEmail', header: 'Leader College Email', width: 32, align: 'left', category: 'TEAM LEADER (MEMBER 1)', catBg: COLORS.LEADER_BG },
     { key: 'leaderPhone', header: 'Leader Phone / WhatsApp', width: 22, align: 'center', category: 'TEAM LEADER (MEMBER 1)', catBg: COLORS.LEADER_BG },
+    { key: 'leaderResType', header: 'Leader Residence Type', width: 20, align: 'center', category: 'TEAM LEADER (MEMBER 1)', catBg: COLORS.LEADER_BG },
+    { key: 'leaderResDetails', header: 'Leader Hostel / Location Details', width: 36, align: 'left', category: 'TEAM LEADER (MEMBER 1)', catBg: COLORS.LEADER_BG },
 
     // Member 2
     { key: 'm2Name', header: 'Member 2 Full Name', width: 26, align: 'left', category: 'MEMBER 2', catBg: COLORS.MEMBER_BG },
     { key: 'm2RegNo', header: 'Member 2 Reg. No.', width: 22, align: 'center', category: 'MEMBER 2', catBg: COLORS.MEMBER_BG },
     { key: 'm2Email', header: 'Member 2 College Email', width: 32, align: 'left', category: 'MEMBER 2', catBg: COLORS.MEMBER_BG },
     { key: 'm2Phone', header: 'Member 2 Phone Number', width: 22, align: 'center', category: 'MEMBER 2', catBg: COLORS.MEMBER_BG },
+    { key: 'm2ResType', header: 'Member 2 Residence Type', width: 20, align: 'center', category: 'MEMBER 2', catBg: COLORS.MEMBER_BG },
+    { key: 'm2ResDetails', header: 'Member 2 Hostel / Location Details', width: 36, align: 'left', category: 'MEMBER 2', catBg: COLORS.MEMBER_BG },
 
     // Member 3
     { key: 'm3Name', header: 'Member 3 Full Name', width: 26, align: 'left', category: 'MEMBER 3', catBg: COLORS.MEMBER_BG },
     { key: 'm3RegNo', header: 'Member 3 Reg. No.', width: 22, align: 'center', category: 'MEMBER 3', catBg: COLORS.MEMBER_BG },
     { key: 'm3Email', header: 'Member 3 College Email', width: 32, align: 'left', category: 'MEMBER 3', catBg: COLORS.MEMBER_BG },
     { key: 'm3Phone', header: 'Member 3 Phone Number', width: 22, align: 'center', category: 'MEMBER 3', catBg: COLORS.MEMBER_BG },
+    { key: 'm3ResType', header: 'Member 3 Residence Type', width: 20, align: 'center', category: 'MEMBER 3', catBg: COLORS.MEMBER_BG },
+    { key: 'm3ResDetails', header: 'Member 3 Hostel / Location Details', width: 36, align: 'left', category: 'MEMBER 3', catBg: COLORS.MEMBER_BG },
 
     // Member 4
     { key: 'm4Name', header: 'Member 4 Full Name', width: 26, align: 'left', category: 'MEMBER 4', catBg: COLORS.MEMBER_BG },
     { key: 'm4RegNo', header: 'Member 4 Reg. No.', width: 22, align: 'center', category: 'MEMBER 4', catBg: COLORS.MEMBER_BG },
     { key: 'm4Email', header: 'Member 4 College Email', width: 32, align: 'left', category: 'MEMBER 4', catBg: COLORS.MEMBER_BG },
     { key: 'm4Phone', header: 'Member 4 Phone Number', width: 22, align: 'center', category: 'MEMBER 4', catBg: COLORS.MEMBER_BG },
+    { key: 'm4ResType', header: 'Member 4 Residence Type', width: 20, align: 'center', category: 'MEMBER 4', catBg: COLORS.MEMBER_BG },
+    { key: 'm4ResDetails', header: 'Member 4 Hostel / Location Details', width: 36, align: 'left', category: 'MEMBER 4', catBg: COLORS.MEMBER_BG },
 
     // Member 5
     { key: 'm5Name', header: 'Member 5 Full Name', width: 26, align: 'left', category: 'MEMBER 5', catBg: COLORS.MEMBER_BG },
     { key: 'm5RegNo', header: 'Member 5 Reg. No.', width: 22, align: 'center', category: 'MEMBER 5', catBg: COLORS.MEMBER_BG },
     { key: 'm5Email', header: 'Member 5 College Email', width: 32, align: 'left', category: 'MEMBER 5', catBg: COLORS.MEMBER_BG },
     { key: 'm5Phone', header: 'Member 5 Phone Number', width: 22, align: 'center', category: 'MEMBER 5', catBg: COLORS.MEMBER_BG },
+    { key: 'm5ResType', header: 'Member 5 Residence Type', width: 20, align: 'center', category: 'MEMBER 5', catBg: COLORS.MEMBER_BG },
+    { key: 'm5ResDetails', header: 'Member 5 Hostel / Location Details', width: 36, align: 'left', category: 'MEMBER 5', catBg: COLORS.MEMBER_BG },
 
     // Payment & Audit Section
     { key: 'paymentMethod', header: 'Payment Method', width: 18, align: 'center', category: 'PAYMENT AUDIT & VERIFICATION', catBg: COLORS.PAYMENT_BG },
@@ -204,6 +214,32 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
       const isEven = teamIdx % 2 === 1;
       const rowBg = isEven ? COLORS.ROW_ALT_BG : COLORS.WHITE;
 
+      const getMemberResidence = (m) => {
+        if (!m || !(m.fullName || m.full_name)) return { type: '—', details: '—' };
+        const resType = m.residenceType || m.residence_type || 'HOSTELLER';
+        if (resType === 'DAY_SCHOLAR') {
+          const subType = (m.dayScholarType || m.day_scholar_type) === 'LOCAL' ? 'Local' : 'Non-Local';
+          const loc = m.dayScholarLocation || m.day_scholar_location || '';
+          const addr = m.residenceAddress || m.residence_address || '';
+          return {
+            type: `Day Scholar (${subType})`,
+            details: `${loc}${loc && addr ? ' - ' : ''}${addr}`.trim() || '—'
+          };
+        }
+        const block = m.hostelBlock || m.hostel_block || 'Hostel';
+        const room = m.roomNo || m.room_no || '—';
+        return {
+          type: 'Hosteller',
+          details: `${block}, Room: ${room}`
+        };
+      };
+
+      const leaderRes = getMemberResidence(leader);
+      const m2Res = getMemberResidence(m2);
+      const m3Res = getMemberResidence(m3);
+      const m4Res = getMemberResidence(m4);
+      const m5Res = getMemberResidence(m5);
+
       const rowData = {
         sno: teamIdx + 1,
         registrationId: team.registrationId || team.registration_id || '—',
@@ -218,30 +254,40 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
         leaderRegNo: leader.regNumber || leader.reg_number || '—',
         leaderEmail: leader.collegeEmail || leader.college_email || '—',
         leaderPhone: leader.phone || '—',
+        leaderResType: leaderRes.type,
+        leaderResDetails: leaderRes.details,
 
         // Member 2
         m2Name: m2.fullName || m2.full_name || '—',
         m2RegNo: m2.regNumber || m2.reg_number || '—',
         m2Email: m2.collegeEmail || m2.college_email || '—',
         m2Phone: m2.phone || '—',
+        m2ResType: m2Res.type,
+        m2ResDetails: m2Res.details,
 
         // Member 3
         m3Name: m3.fullName || m3.full_name || '—',
         m3RegNo: m3.regNumber || m3.reg_number || '—',
         m3Email: m3.collegeEmail || m3.college_email || '—',
         m3Phone: m3.phone || '—',
+        m3ResType: m3Res.type,
+        m3ResDetails: m3Res.details,
 
         // Member 4
         m4Name: m4.fullName || m4.full_name || '—',
         m4RegNo: m4.regNumber || m4.reg_number || '—',
         m4Email: m4.collegeEmail || m4.college_email || '—',
         m4Phone: m4.phone || '—',
+        m4ResType: m4Res.type,
+        m4ResDetails: m4Res.details,
 
         // Member 5
         m5Name: m5.fullName || m5.full_name || '—',
         m5RegNo: m5.regNumber || m5.reg_number || '—',
         m5Email: m5.collegeEmail || m5.college_email || '—',
         m5Phone: m5.phone || '—',
+        m5ResType: m5Res.type,
+        m5ResDetails: m5Res.details,
 
         // Payment
         paymentMethod: payment.paymentMethod || payment.payment_method || '—',

@@ -3900,5 +3900,140 @@ img, svg, video, canvas {
   }
 }
 
+/* ================= RESIDENCE & HOSTEL SECTIONS ================= */
+.residence-box {
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm, 10px);
+  padding: 18px;
+  margin-top: 16px;
+  backdrop-filter: blur(8px);
+  transition: border-color var(--trans-fast, 0.2s);
+}
 
+.residence-box:focus-within {
+  border-color: rgba(139, 92, 246, 0.4);
+}
 
+.residence-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.residence-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.residence-title .required {
+  color: var(--danger, #ef4444);
+}
+
+.residence-type-selector {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.residence-pill-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  background: rgba(30, 41, 59, 0.55);
+  color: var(--text-secondary, #cbd5e1);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.residence-pill-btn:hover {
+  background: rgba(51, 65, 85, 0.7);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.residence-pill-btn.active.hosteller {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.22), rgba(37, 99, 235, 0.15));
+  border-color: #3b82f6;
+  color: #93c5fd;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.35);
+}
+
+.residence-pill-btn.active.dayscholar {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(5, 150, 105, 0.15));
+  border-color: #10b981;
+  color: #6ee7b7;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+}
+
+.residence-subform {
+  animation: residenceFadeIn 0.25s ease-out;
+}
+
+@keyframes residenceFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.badge-hostel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.badge-dayscholar {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.residence-subform.hidden {
+  display: none !important;
+}
+
+@media (max-width: 580px) {
+  .residence-type-selector {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .residence-box {
+    padding: 14px;
+  }
+}

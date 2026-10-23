@@ -16,7 +16,8 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="print.css">
   <!-- Cloudflare Turnstile Bot Protection API -->
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback&render=explicit" async defer></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback&render=explicit"
+    async defer></script>
 </head>
 
 <body>
@@ -409,6 +410,81 @@
                 </div>
               </div>
             </div>
+
+            <!-- Team Leader Residence & Hostel Section -->
+            <div class="residence-box" id="leader-residence-box">
+              <div class="residence-header">
+                <span class="residence-title">
+                  <span>🏠</span> Residence & Accommodation Status <span class="required">*</span>
+                </span>
+                <span class="input-hint" style="margin: 0;">Required for campus entry, night permissions & hackathon
+                  logistics</span>
+              </div>
+
+              <!-- Segmented Toggle -->
+              <div class="residence-type-selector">
+                <button type="button" class="residence-pill-btn hosteller active" id="btn-leader-res-hosteller"
+                  data-target="leader" data-type="HOSTELLER">
+                  <span>🏢</span> Hosteller (Campus)
+                </button>
+                <button type="button" class="residence-pill-btn dayscholar" id="btn-leader-res-dayscholar"
+                  data-target="leader" data-type="DAY_SCHOLAR">
+                  <span>🚌</span> Day Scholar
+                </button>
+              </div>
+              <input type="hidden" id="leader-residence-type" value="HOSTELLER">
+
+              <!-- Hosteller Details Subform -->
+              <div class="residence-subform" id="leader-hostel-container">
+                <div class="form-grid-2">
+                  <div class="form-group mb-0">
+                    <label for="leader-hostel-block" class="form-label">
+                      Hostel Block <span class="required">*</span>
+                    </label>
+                    <input type="text" id="leader-hostel-block" class="form-input"
+                      placeholder="e.g. Block 1 / Block 2 / Girls Block 1">
+                  </div>
+
+                  <div class="form-group mb-0">
+                    <label for="leader-room-no" class="form-label">
+                      Room Number <span class="required">*</span>
+                    </label>
+                    <input type="text" id="leader-room-no" class="form-input" placeholder="e.g. A001">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Day Scholar Details Subform -->
+              <div class="residence-subform hidden" id="leader-dayscholar-container">
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="leader-dayscholar-type" class="form-label">
+                      Scholar Category <span class="required">*</span>
+                    </label>
+                    <select id="leader-dayscholar-type" class="form-input form-select">
+                      <option value="LOCAL">Local Resident</option>
+                      <option value="NON_LOCAL">Non-Local</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="leader-dayscholar-location" class="form-label">
+                      City / Area / Town <span class="required">*</span>
+                    </label>
+                    <input type="text" id="leader-dayscholar-location" class="form-input"
+                      placeholder="e.g. Bhopal, Kothri">
+                  </div>
+                </div>
+
+                <div class="form-group mb-0">
+                  <label for="leader-residence-address" class="form-label">
+                    Detailed Address / PG Name <span class="required">*</span>
+                  </label>
+                  <input type="text" id="leader-residence-address" class="form-input"
+                    placeholder="e.g. Balaji PG or Saket Nagar">
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="form-actions">
@@ -458,7 +534,8 @@
           <div class="member-summary-inline">
             <span id="leader-preview-reg">Reg: -</span> •
             <span id="leader-preview-email">Email: -</span> •
-            <span id="leader-preview-phone">Phone: -</span>
+            <span id="leader-preview-phone">Phone: -</span> •
+            <span id="leader-preview-residence">Residence: -</span>
           </div>
         </div>
 
@@ -528,6 +605,7 @@
                     <th>Reg. Number</th>
                     <th>College Email</th>
                     <th>Phone</th>
+                    <th>Residence / Hostel</th>
                   </tr>
                 </thead>
                 <tbody id="review-roster-tbody">
@@ -957,11 +1035,14 @@
         <!-- Lookup Step -->
         <div id="edit-lookup-zone" class="edit-lookup-box">
           <p class="modal-desc">
-            Enter your official <strong>Registration ID</strong> (e.g. <code>CV26-TM-48291</code>) and <strong>Team Leader's Email</strong> to securely load and edit your team roster.
+            Enter your official <strong>Registration ID</strong> (e.g. <code>CV26-TM-48291</code>) and <strong>Team
+              Leader's Email</strong> to securely load and edit your team roster.
           </p>
           <div class="track-input-group" style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <input type="text" id="edit-search-input" class="form-input monospace" placeholder="CV26-TM-XXXXX" style="flex: 1; min-width: 160px;" uppercase>
-            <input type="email" id="edit-search-email" class="form-input" placeholder="Leader College Email" style="flex: 1.5; min-width: 200px;" required>
+            <input type="text" id="edit-search-input" class="form-input monospace" placeholder="CV26-TM-XXXXX"
+              style="flex: 1; min-width: 160px;" uppercase>
+            <input type="email" id="edit-search-email" class="form-input" placeholder="Leader College Email"
+              style="flex: 1.5; min-width: 200px;" required>
             <button type="button" class="btn btn-primary" id="btn-lookup-edit">Load Team Profile</button>
           </div>
         </div>
@@ -1059,6 +1140,63 @@
                 <input type="tel" id="edit-leader-phone" class="form-input" required maxlength="15">
               </div>
             </div>
+
+            <!-- Edit Leader Residence / Accommodation Section -->
+            <div class="residence-box" id="edit-leader-residence-box">
+              <div class="residence-header">
+                <span class="residence-title">
+                  <span>🏠</span> Accommodation & Residence Status <span class="required">*</span>
+                </span>
+              </div>
+
+              <div class="residence-type-selector">
+                <button type="button" class="residence-pill-btn hosteller active" id="btn-edit-leader-res-hosteller"
+                  data-target="edit-leader" data-type="HOSTELLER">
+                  <span>🏢</span> Hosteller
+                </button>
+                <button type="button" class="residence-pill-btn dayscholar" id="btn-edit-leader-res-dayscholar"
+                  data-target="edit-leader" data-type="DAY_SCHOLAR">
+                  <span>🚌</span> Day Scholar
+                </button>
+              </div>
+              <input type="hidden" id="edit-leader-residence-type" value="HOSTELLER">
+
+              <div class="residence-subform" id="edit-leader-hostel-container">
+                <div class="form-grid-2">
+                  <div class="form-group mb-0">
+                    <label for="edit-leader-hostel-block" class="form-label">Hostel Block</label>
+                    <input type="text" id="edit-leader-hostel-block" class="form-input"
+                      placeholder="e.g. Block 1 / Block 2">
+                  </div>
+                  <div class="form-group mb-0">
+                    <label for="edit-leader-room-no" class="form-label">Room Number</label>
+                    <input type="text" id="edit-leader-room-no" class="form-input" placeholder="e.g. 204">
+                  </div>
+                </div>
+              </div>
+
+              <div class="residence-subform hidden" id="edit-leader-dayscholar-container">
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="edit-leader-dayscholar-type" class="form-label">Scholar Category</label>
+                    <select id="edit-leader-dayscholar-type" class="form-input form-select">
+                      <option value="LOCAL">Local Resident (Daily commuter)</option>
+                      <option value="NON_LOCAL">Non-Local (PG / Rental flat)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="edit-leader-dayscholar-location" class="form-label">City / Area / Town</label>
+                    <input type="text" id="edit-leader-dayscholar-location" class="form-input"
+                      placeholder="e.g. Bhopal, Sehore, Ashta">
+                  </div>
+                </div>
+                <div class="form-group mb-0">
+                  <label for="edit-leader-residence-address" class="form-label">Address / PG Name</label>
+                  <input type="text" id="edit-leader-residence-address" class="form-input"
+                    placeholder="e.g. Balaji PG, Kothri">
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Section 3: Dynamic Members (Fixed team roster based on paid registration) -->
@@ -1066,7 +1204,8 @@
             <span class="section-icon">👥</span> Team Members Roster
           </div>
           <p style="font-size: 0.82rem; color: rgba(255, 255, 255, 0.55); margin-top: -6px; margin-bottom: 14px;">
-            🔒 Team size is fixed based on your completed payment. Member details can be updated, but members cannot be added or removed.
+            🔒 Team size is fixed based on your completed payment. Member details can be updated, but members cannot be
+            added or removed.
           </p>
 
           <!-- Dynamic Edit Members Container -->
@@ -1229,6 +1368,7 @@
               <th>Role</th>
               <th>Name</th>
               <th>Registration No.</th>
+              <th>Residence / Hostel</th>
             </tr>
           </thead>
           <tbody id="print-members-tbody">
