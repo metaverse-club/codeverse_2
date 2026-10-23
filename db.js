@@ -48,6 +48,11 @@ function mapMember(row, residenceMetadata = {}) {
   const emailKey = (row.college_email || '').trim().toLowerCase();
   const meta = residenceMetadata[regKey] || residenceMetadata[emailKey] || {};
 
+  let residenceType = row.residence_type;
+  if (!residenceType || (residenceType === 'HOSTELLER' && !row.hostel_block && !row.room_no && (meta.residenceType || meta.dayScholarLocation))) {
+    residenceType = meta.residenceType || residenceType || 'HOSTELLER';
+  }
+
   return {
     id: row.id,
     teamId: row.team_id,
@@ -56,14 +61,12 @@ function mapMember(row, residenceMetadata = {}) {
     collegeEmail: row.college_email,
     phone: row.phone,
     isLeader: row.is_leader === true || row.is_leader === 'true' || row.is_leader === 1,
-    residenceType: row.residence_type || meta.residenceType || 'HOSTELLER',
+    residenceType: residenceType || 'HOSTELLER',
     hostelBlock: row.hostel_block || meta.hostelBlock || '',
     roomNo: row.room_no || meta.roomNo || '',
-    hostelDetails: row.hostel_details || meta.hostelDetails || '',
     dayScholarType: row.day_scholar_type || meta.dayScholarType || '',
     dayScholarLocation: row.day_scholar_location || meta.dayScholarLocation || '',
     residenceAddress: row.residence_address || meta.residenceAddress || '',
-    commuteMode: row.commute_mode || meta.commuteMode || '',
     createdAt: row.created_at
   };
 }
@@ -240,15 +243,14 @@ async function createTeam({ teamName, track, projectTitle, members }) {
     residence_type: m.residenceType || 'HOSTELLER',
     hostel_block: m.hostelBlock || '',
     room_no: m.roomNo || '',
-    hostel_details: m.hostelDetails || '',
     day_scholar_type: m.dayScholarType || '',
     day_scholar_location: m.dayScholarLocation || '',
-    residence_address: m.residenceAddress || '',
-    commute_mode: m.commuteMode || ''
+    residence_address: m.residenceAddress || ''
   }));
 
   const { error: fullMembersError } = await supabase.from('team_members').insert(fullMembersToInsert);
   if (fullMembersError) {
+    console.error('[DB] Full members insert failed, retrying base fields:', fullMembersError.message);
     // If Supabase schema does not have the residence columns yet
     const baseMembersToInsert = members.map(m => ({
       team_id: team.id,
@@ -405,15 +407,14 @@ async function updateTeamDetails({ registrationId, teamName, track, projectTitle
       residence_type: m.residenceType || 'HOSTELLER',
       hostel_block: m.hostelBlock || '',
       room_no: m.roomNo || '',
-      hostel_details: m.hostelDetails || '',
       day_scholar_type: m.dayScholarType || '',
       day_scholar_location: m.dayScholarLocation || '',
-      residence_address: m.residenceAddress || '',
-      commute_mode: m.commuteMode || ''
+      residence_address: m.residenceAddress || ''
     }));
 
     const { error: fullInsertError } = await supabase.from('team_members').insert(fullMembersToInsert);
     if (fullInsertError) {
+      console.error('[DB] Update team members insert failed, retrying base fields:', fullInsertError.message);
       const baseMembersToInsert = members.map(m => ({
         team_id: team.id,
         full_name: m.fullName.trim(),
@@ -578,15 +579,14 @@ async function adminUpdateTeam({ registrationId, teamName, track, projectTitle, 
       residence_type: m.residenceType || 'HOSTELLER',
       hostel_block: m.hostelBlock || '',
       room_no: m.roomNo || '',
-      hostel_details: m.hostelDetails || '',
       day_scholar_type: m.dayScholarType || '',
       day_scholar_location: m.dayScholarLocation || '',
-      residence_address: m.residenceAddress || '',
-      commute_mode: m.commuteMode || ''
+      residence_address: m.residenceAddress || ''
     }));
 
     const { error: fullInsertError } = await supabase.from('team_members').insert(fullMembersToInsert);
     if (fullInsertError) {
+      console.error('[DB] Admin update members insert failed, retrying base fields:', fullInsertError.message);
       const baseMembersToInsert = members.map(m => ({
         team_id: team.id,
         full_name: m.fullName.trim(),

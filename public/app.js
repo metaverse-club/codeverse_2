@@ -1565,11 +1565,9 @@ async function handleConfirmAndProceedToPayment() {
                 residenceType: state.teamDraft.leader.residenceType || 'HOSTELLER',
                 hostelBlock: state.teamDraft.leader.hostelBlock || '',
                 roomNo: state.teamDraft.leader.roomNo || '',
-                hostelDetails: state.teamDraft.leader.hostelDetails || '',
                 dayScholarType: state.teamDraft.leader.dayScholarType || 'LOCAL',
                 dayScholarLocation: state.teamDraft.leader.dayScholarLocation || '',
                 residenceAddress: state.teamDraft.leader.residenceAddress || '',
-                commuteMode: state.teamDraft.leader.commuteMode || '',
                 isLeader: true
               },
               ...state.teamDraft.members.map(m => ({
@@ -1580,11 +1578,9 @@ async function handleConfirmAndProceedToPayment() {
                 residenceType: m.residenceType || 'HOSTELLER',
                 hostelBlock: m.hostelBlock || '',
                 roomNo: m.roomNo || '',
-                hostelDetails: m.hostelDetails || '',
                 dayScholarType: m.dayScholarType || 'LOCAL',
                 dayScholarLocation: m.dayScholarLocation || '',
                 residenceAddress: m.residenceAddress || '',
-                commuteMode: m.commuteMode || '',
                 isLeader: false
               }))
             ]
@@ -1623,11 +1619,9 @@ async function handleConfirmAndProceedToPayment() {
           residenceType: state.teamDraft.leader.residenceType || 'HOSTELLER',
           hostelBlock: state.teamDraft.leader.hostelBlock || '',
           roomNo: state.teamDraft.leader.roomNo || '',
-          hostelDetails: state.teamDraft.leader.hostelDetails || '',
           dayScholarType: state.teamDraft.leader.dayScholarType || 'LOCAL',
           dayScholarLocation: state.teamDraft.leader.dayScholarLocation || '',
           residenceAddress: state.teamDraft.leader.residenceAddress || '',
-          commuteMode: state.teamDraft.leader.commuteMode || '',
           isLeader: true
         },
         ...state.teamDraft.members.map(m => ({
@@ -1638,11 +1632,9 @@ async function handleConfirmAndProceedToPayment() {
           residenceType: m.residenceType || 'HOSTELLER',
           hostelBlock: m.hostelBlock || '',
           roomNo: m.roomNo || '',
-          hostelDetails: m.hostelDetails || '',
           dayScholarType: m.dayScholarType || 'LOCAL',
           dayScholarLocation: m.dayScholarLocation || '',
           residenceAddress: m.residenceAddress || '',
-          commuteMode: m.commuteMode || '',
           isLeader: false
         }))
       ]
@@ -2840,11 +2832,9 @@ async function handleSaveTeamEdit(e) {
       residenceType: editLeaderResType,
       hostelBlock: editLeaderBlock,
       roomNo: editLeaderRoom,
-      hostelDetails: editLeaderDetails,
       dayScholarType: editLeaderDayType,
       dayScholarLocation: editLeaderDayLoc,
       residenceAddress: editLeaderAddress,
-      commuteMode: editLeaderCommute,
       isLeader: true
     }
   ];
@@ -2906,11 +2896,9 @@ async function handleSaveTeamEdit(e) {
       residenceType: mem.residenceType || 'HOSTELLER',
       hostelBlock: mem.hostelBlock || '',
       roomNo: mem.roomNo || '',
-      hostelDetails: mem.hostelDetails || '',
       dayScholarType: mem.dayScholarType || 'LOCAL',
       dayScholarLocation: mem.dayScholarLocation || '',
       residenceAddress: mem.residenceAddress || '',
-      commuteMode: mem.commuteMode || '',
       isLeader: false
     });
   }
