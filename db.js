@@ -90,14 +90,7 @@ async function saveTeamResidenceMetadata(teamId, members = []) {
     }
   }
 
-  // 1. Save in Supabase app_settings
-  try {
-    await setSetting(`residence_team_${teamId}`, JSON.stringify(metaObj));
-  } catch (err) {
-    console.warn('[DB] Failed to save residence in app_settings:', err.message);
-  }
-
-  // 2. Also sync to local SQLite
+  // Sync to local SQLite if available (optional)
   try {
     if (sqliteDb) {
       for (const m of members) {
