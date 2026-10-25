@@ -996,16 +996,22 @@ img, svg, video, canvas {
   line-height: 1.65;
 }
 
-/* Sectors Grid */
+/* Sectors Grid: 5-Card Balanced 3 + 2 Layout (No Empty Space) */
 .sectors-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 24px;
 }
 
 .sector-card {
+  grid-column: span 2;
   display: flex;
   flex-direction: column;
+}
+
+.sector-card:nth-child(4),
+.sector-card:nth-child(5) {
+  grid-column: span 3;
 }
 
 .sector-head {
@@ -1064,6 +1070,272 @@ img, svg, video, canvas {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-glass);
   color: var(--text-secondary);
+}
+
+/* ================= ROUND 1 THEME SPOTLIGHT ================= */
+.round-theme-spotlight {
+  max-width: 1040px;
+  margin: 0 auto 36px auto;
+  padding: 36px 40px;
+  background: linear-gradient(135deg, rgba(20, 30, 50, 0.8) 0%, rgba(14, 18, 30, 0.9) 100%);
+  border: 1.5px solid rgba(56, 189, 248, 0.35);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 35px rgba(56, 189, 248, 0.15);
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+}
+
+.round-theme-spotlight:hover {
+  border-color: rgba(56, 189, 248, 0.65);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), 0 0 45px rgba(56, 189, 248, 0.3);
+}
+
+.round-theme-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  margin-bottom: 20px;
+}
+
+.round-theme-badge .badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: pulse 2s infinite;
+}
+
+.round-theme-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.round-theme-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.round-theme-caption {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: #38bdf8;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.round-theme-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.round-theme-desc {
+  color: var(--text-secondary);
+  font-size: 0.98rem;
+  line-height: 1.65;
+  margin-bottom: 20px;
+  max-width: 880px;
+}
+
+.round-theme-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  margin-bottom: 18px;
+}
+
+.round-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.round-meta-item .meta-icon {
+  font-size: 1.1rem;
+}
+
+/* Round 2 Divider Banner */
+.round-divider-banner {
+  text-align: center;
+  margin: 44px auto 28px auto;
+  max-width: 800px;
+}
+
+.round-divider-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 8px 22px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 107, 43, 0.12);
+  border: 1px solid var(--copper-border);
+  color: var(--copper-light);
+  margin-bottom: 12px;
+}
+
+.round-divider-sub {
+  color: var(--text-secondary);
+  font-size: 0.96rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ================= WHATSAPP COMMUNITY BANNER ================= */
+.whatsapp-community-banner {
+  max-width: 1040px;
+  margin: 48px auto 0 auto;
+  padding: 32px 36px;
+  background: linear-gradient(135deg, rgba(18, 38, 28, 0.75) 0%, rgba(14, 24, 20, 0.88) 100%);
+  border: 1.5px solid rgba(37, 211, 102, 0.35);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6), 0 0 35px rgba(37, 211, 102, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.whatsapp-community-banner:hover {
+  border-color: rgba(37, 211, 102, 0.6);
+  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.75), 0 0 45px rgba(37, 211, 102, 0.3);
+}
+
+.whatsapp-banner-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.whatsapp-banner-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.whatsapp-banner-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: var(--radius-md);
+  background: rgba(37, 211, 102, 0.12);
+  border: 1px solid rgba(37, 211, 102, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  flex-shrink: 0;
+  box-shadow: 0 0 16px rgba(37, 211, 102, 0.2);
+}
+
+.whatsapp-banner-pill {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #34d399;
+  margin-bottom: 6px;
+}
+
+.whatsapp-banner-title {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.whatsapp-banner-desc {
+  color: #cbd5e1;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin: 0;
+  max-width: 620px;
+}
+
+.btn-whatsapp {
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border-radius: var(--radius-full);
+  text-decoration: none;
+  font-family: var(--font-body);
+  transition: all var(--trans-base);
+  white-space: nowrap;
+}
+
+.btn-whatsapp:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(37, 211, 102, 0.55);
+  border-color: #ffffff;
+}
+
+.sector-card-community {
+  display: flex;
+  flex-direction: column;
+  transition: all var(--trans-base);
+}
+
+.sector-card-community:hover {
+  transform: translateY(-5px);
+  border-color: rgba(37, 211, 102, 0.7) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(37, 211, 102, 0.35) !important;
+}
+
+@media (max-width: 900px) {
+  .whatsapp-banner-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .whatsapp-banner-right {
+    width: 100%;
+  }
+  .btn-whatsapp {
+    width: 100%;
+    justify-content: center;
+  }
+  .round-theme-spotlight {
+    padding: 24px 20px;
+  }
 }
 
 /* ================= ROUNDS & TIMELINE ================= */
@@ -1169,6 +1441,44 @@ img, svg, video, canvas {
   font-size: 0.92rem;
   color: var(--text-secondary);
   margin-bottom: 10px;
+}
+
+.prize-card-disclaimer {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px dashed rgba(16, 185, 129, 0.35);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  color: #a7f3d0;
+  text-align: left;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prize-card-disclaimer .disclaimer-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #34d399;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.prize-card-disclaimer .disclaimer-text {
+  margin: 0;
+  color: #d1fae5;
+  font-size: 0.82rem;
+}
+
+.prize-card-disclaimer strong {
+  color: #ffffff;
+  font-weight: 600;
 }
 
 /* ================= INTERNSHIP SPOTLIGHT & PRIZES 3-COL ================= */
@@ -3030,6 +3340,18 @@ img, svg, video, canvas {
     gap: 20px;
   }
 
+  .sector-card {
+    grid-column: span 1;
+  }
+
+  .sector-card:nth-child(4) {
+    grid-column: span 1;
+  }
+
+  .sector-card:nth-child(5) {
+    grid-column: span 2;
+  }
+
   /* Responsive Navbar Breakpoint */
   .nav-links {
     display: none;
@@ -3228,6 +3550,12 @@ img, svg, video, canvas {
   .prizes-grid {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+
+  .sector-card,
+  .sector-card:nth-child(4),
+  .sector-card:nth-child(5) {
+    grid-column: auto;
   }
   
   .featured-prize {
