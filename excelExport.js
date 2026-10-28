@@ -51,6 +51,7 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
     { key: 'teamName', header: 'Team Name', width: 28, align: 'left', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
     { key: 'track', header: 'Innovation Track', width: 30, align: 'left', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
     { key: 'projectTitle', header: 'Proposed Project / Problem Statement', width: 36, align: 'left', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
+    { key: 'referral', header: 'Referral Code', width: 20, align: 'center', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
     { key: 'memberCount', header: 'Total Members', width: 15, align: 'center', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
     { key: 'overallStatus', header: 'Registration Status', width: 24, align: 'center', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
 
@@ -246,6 +247,7 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
         teamName: team.teamName || team.team_name || '—',
         track: team.track || '—',
         projectTitle: team.projectTitle || team.project_title || '—',
+        referral: team.referral || '—',
         memberCount: team.memberCount || team.member_count || members.length,
         overallStatus: formatStatus(team.status),
 

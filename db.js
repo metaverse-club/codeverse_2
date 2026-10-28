@@ -35,6 +35,7 @@ function mapTeam(row) {
     teamName: row.team_name,
     track: row.track,
     projectTitle: row.project_title,
+    referral: row.referral || '',
     memberCount: row.member_count,
     status: row.status,
     createdAt: row.created_at,
@@ -153,6 +154,111 @@ async function getTeamResidenceMetadata(teamId) {
   return {};
 }
 
+async function saveTeamReferralRecord({ teamId, teamName, registrationId, referral }) {
+  if (!teamName) return;
+  const cleanReferral = referral && typeof referral === 'string' && referral.trim() ? referral.trim() : null;
+
+  // 1. Supabase team_referrals table
+  try {
+    const { error } = await supabase.from('team_referrals').insert([{
+      team_id: teamId || null,
+      team_name: teamName.trim(),
+      registration_id: registrationId || null,
+      referral: cleanReferral
+    }]);
+    if (error) {
+      console.warn('[DB] Supabase team_referrals notice:', error.message);
+    }
+  } catch (err) {
+    console.warn('[DB] Supabase team_referrals error:', err.message);
+  }
+
+  // 2. Save in app_settings fallback if referral present
+  if (teamId && cleanReferral) {
+    try {
+      await setSetting(`referral_team_${teamId}`, cleanReferral);
+    } catch (e) {}
+  }
+
+  // 3. Sync to SQLite
+  if (sqliteDb) {
+    try {
+      const recordId = crypto.randomUUID ? crypto.randomUUID() : `ref_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      sqliteDb.prepare(`
+        INSERT INTO team_referrals (id, team_name, referral, registration_id, team_id, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        recordId,
+        teamName.trim(),
+        cleanReferral,
+        registrationId || null,
+        teamId || null,
+        new Date().toISOString()
+      );
+    } catch (sqlErr) {
+      console.warn('[DB] SQLite team_referrals sync error:', sqlErr.message);
+    }
+  }
+}
+
+async function getTeamReferral(teamId, teamName) {
+  // 1. Check Supabase team_referrals
+  try {
+    if (teamId) {
+      const { data } = await supabase.from('team_referrals').select('referral').eq('team_id', teamId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (data && data.referral) return data.referral;
+    }
+    if (teamName) {
+      const { data } = await supabase.from('team_referrals').select('referral').ilike('team_name', teamName.trim()).order('created_at', { ascending: false }).limit(1).maybeSingle();
+      if (data && data.referral) return data.referral;
+    }
+  } catch (e) {}
+
+  // 2. Check app_settings
+  if (teamId) {
+    try {
+      const val = await getSetting(`referral_team_${teamId}`, null);
+      if (val) return val;
+    } catch (e) {}
+  }
+
+  // 3. Check SQLite
+  if (sqliteDb) {
+    try {
+      if (teamId) {
+        const row = sqliteDb.prepare('SELECT referral FROM teams WHERE id = ?').get(teamId);
+        if (row && row.referral) return row.referral;
+        const refRow = sqliteDb.prepare('SELECT referral FROM team_referrals WHERE team_id = ? ORDER BY created_at DESC LIMIT 1').get(teamId);
+        if (refRow && refRow.referral) return refRow.referral;
+      }
+      if (teamName) {
+        const refRow2 = sqliteDb.prepare('SELECT referral FROM team_referrals WHERE LOWER(team_name) = ? ORDER BY created_at DESC LIMIT 1').get(teamName.trim().toLowerCase());
+        if (refRow2 && refRow2.referral) return refRow2.referral;
+      }
+    } catch (e) {}
+  }
+
+  return '';
+}
+
+async function getAllTeamReferrals() {
+  try {
+    const { data, error } = await supabase.from('team_referrals').select('*').order('created_at', { ascending: false });
+    if (!error && Array.isArray(data) && data.length > 0) {
+      return data;
+    }
+  } catch (e) {}
+
+  if (sqliteDb) {
+    try {
+      const rows = sqliteDb.prepare('SELECT * FROM team_referrals ORDER BY created_at DESC').all();
+      if (rows && rows.length > 0) return rows;
+    } catch (e) {}
+  }
+
+  return [];
+}
+
 function mapPayment(row) {
   if (!row) return null;
   return {
@@ -175,7 +281,7 @@ function generateRegistrationId() {
   return `CV26-TM-${randomDigits}`;
 }
 
-async function createTeam({ teamName, track, projectTitle, members }) {
+async function createTeam({ teamName, track, projectTitle, members, referral }) {
   if (!Array.isArray(members) || members.length < 2 || members.length > 5) throw new Error('A team must have between 2 and 5 members (1 Team Leader + 1 to 4 Members).');
   const leaderCount = members.filter(m => m.isLeader).length;
   if (leaderCount !== 1) throw new Error('Exactly one member must be designated as the Team Leader.');
@@ -215,16 +321,46 @@ async function createTeam({ teamName, track, projectTitle, members }) {
     if (!collision) break;
   }
 
-  const { data: team, error: teamError } = await supabase.from('teams').insert([{
+  const cleanReferral = referral && typeof referral === 'string' && referral.trim() ? referral.trim() : null;
+
+  let team;
+  const fullTeamPayload = {
     registration_id: registrationId,
     team_name: teamName.trim(),
     track: track || 'Open Innovation',
     project_title: projectTitle || '',
+    referral: cleanReferral,
     member_count: members.length,
     status: 'PENDING_PAYMENT'
-  }]).select().single();
+  };
 
-  if (teamError) throw new Error('Failed to create team: ' + teamError.message);
+  const { data: teamData, error: teamError } = await supabase.from('teams').insert([fullTeamPayload]).select().single();
+
+  if (teamError) {
+    // If Supabase schema does not have the referral column yet, retry base fields
+    console.warn('[DB] Teams insert with referral failed, retrying base fields:', teamError.message);
+    const baseTeamPayload = {
+      registration_id: registrationId,
+      team_name: teamName.trim(),
+      track: track || 'Open Innovation',
+      project_title: projectTitle || '',
+      member_count: members.length,
+      status: 'PENDING_PAYMENT'
+    };
+    const { data: fallbackTeam, error: fallbackError } = await supabase.from('teams').insert([baseTeamPayload]).select().single();
+    if (fallbackError) throw new Error('Failed to create team: ' + fallbackError.message);
+    team = fallbackTeam;
+  } else {
+    team = teamData;
+  }
+
+  // Always record into team_referrals table (where Team Name and its Referral is written)
+  await saveTeamReferralRecord({
+    teamId: team.id,
+    teamName: team.team_name || teamName.trim(),
+    registrationId: team.registration_id || registrationId,
+    referral: cleanReferral
+  });
 
   const fullMembersToInsert = members.map(m => ({
     team_id: team.id,
@@ -264,9 +400,9 @@ async function createTeam({ teamName, track, projectTitle, members }) {
   if (sqliteDb) {
     try {
       sqliteDb.prepare(`
-        INSERT OR REPLACE INTO teams (id, registration_id, team_name, track, project_title, member_count, status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(team.id, registrationId, teamName.trim(), track || 'Open Innovation', projectTitle || '', members.length, 'PENDING_PAYMENT', new Date().toISOString(), new Date().toISOString());
+        INSERT OR REPLACE INTO teams (id, registration_id, team_name, track, project_title, member_count, status, referral, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(team.id, registrationId, teamName.trim(), track || 'Open Innovation', projectTitle || '', members.length, 'PENDING_PAYMENT', cleanReferral, new Date().toISOString(), new Date().toISOString());
 
       for (const m of members) {
         sqliteDb.prepare(`
@@ -307,8 +443,11 @@ async function getTeamByRegistrationId(registrationId) {
 
   const resMeta = await getTeamResidenceMetadata(team.id);
   const mappedMembers = (members || []).map(m => mapMember(m, resMeta));
+  const referral = team.referral || await getTeamReferral(team.id, team.team_name);
+
   return {
     ...mapTeam(team),
+    referral: referral || team.referral || '',
     members: mappedMembers,
     leader: mappedMembers.find(m => m.isLeader) || mappedMembers[0] || null,
     payment: mapPayment(payment)
@@ -353,7 +492,7 @@ async function getPendingTeam(identifier) {
   return team;
 }
 
-async function updateTeamDetails({ registrationId, teamName, track, projectTitle, members }) {
+async function updateTeamDetails({ registrationId, teamName, track, projectTitle, members, referral }) {
   const team = await getTeamByRegistrationId(registrationId);
   if (!team) throw new Error(`Team ${registrationId} not found.`);
 
@@ -362,12 +501,35 @@ async function updateTeamDetails({ registrationId, teamName, track, projectTitle
     if (existing) throw new Error(`Team name "${teamName}" is already taken.`);
   }
 
-  await supabase.from('teams').update({
+  const cleanReferral = referral !== undefined ? (referral && typeof referral === 'string' && referral.trim() ? referral.trim() : null) : undefined;
+
+  const updateFields = {
     team_name: teamName ? teamName.trim() : team.teamName,
     track: track || team.track,
     project_title: projectTitle || team.projectTitle,
     updated_at: new Date().toISOString()
-  }).eq('id', team.id);
+  };
+  if (cleanReferral !== undefined) {
+    updateFields.referral = cleanReferral;
+  }
+
+  try {
+    await supabase.from('teams').update(updateFields).eq('id', team.id);
+  } catch (err) {
+    if (updateFields.referral !== undefined) {
+      delete updateFields.referral;
+      await supabase.from('teams').update(updateFields).eq('id', team.id);
+    }
+  }
+
+  if (cleanReferral !== undefined) {
+    await saveTeamReferralRecord({
+      teamId: team.id,
+      teamName: teamName ? teamName.trim() : team.teamName,
+      registrationId: team.registrationId,
+      referral: cleanReferral
+    });
+  }
 
   if (members && Array.isArray(members) && members.length > 0) {
     if (team.memberCount && members.length !== team.memberCount) {
@@ -502,8 +664,10 @@ async function getAllTeams({ status = 'ALL', search = '', onlyCompleted = true }
 
     const resMeta = await getTeamResidenceMetadata(teamData.id);
     const mappedMembers = (members || []).map(m => mapMember(m, resMeta));
+    const teamReferral = teamData.referral || await getTeamReferral(teamData.id, teamData.team_name);
     teams.push({
       ...mapTeam(teamData),
+      referral: teamReferral || teamData.referral || '',
       payment: mapPayment(paymentObj),
       members: mappedMembers,
       leader: mappedMembers.find(m => m.isLeader) || mappedMembers[0] || null
@@ -543,7 +707,7 @@ async function deleteTeam(registrationId) {
   return true;
 }
 
-async function adminUpdateTeam({ registrationId, teamName, track, projectTitle, status, members, payment }) {
+async function adminUpdateTeam({ registrationId, teamName, track, projectTitle, status, members, payment, referral }) {
   let team = await getTeamByRegistrationId(registrationId);
   if (!team) throw new Error('Team not found');
 
@@ -552,13 +716,36 @@ async function adminUpdateTeam({ registrationId, teamName, track, projectTitle, 
     if (existing) throw new Error(`Team name "${teamName}" is already taken.`);
   }
 
-  await supabase.from('teams').update({
+  const cleanReferral = referral !== undefined ? (referral && typeof referral === 'string' && referral.trim() ? referral.trim() : null) : undefined;
+
+  const updateFields = {
     team_name: teamName ? teamName.trim() : team.teamName,
     track: track || team.track,
     project_title: projectTitle || team.projectTitle,
     status: status || team.status,
     updated_at: new Date().toISOString()
-  }).eq('id', team.id);
+  };
+  if (cleanReferral !== undefined) {
+    updateFields.referral = cleanReferral;
+  }
+
+  try {
+    await supabase.from('teams').update(updateFields).eq('id', team.id);
+  } catch (err) {
+    if (updateFields.referral !== undefined) {
+      delete updateFields.referral;
+      await supabase.from('teams').update(updateFields).eq('id', team.id);
+    }
+  }
+
+  if (cleanReferral !== undefined) {
+    await saveTeamReferralRecord({
+      teamId: team.id,
+      teamName: teamName ? teamName.trim() : team.teamName,
+      registrationId: team.registrationId,
+      referral: cleanReferral
+    });
+  }
 
   if (members && Array.isArray(members) && members.length > 0) {
     await supabase.from('team_members').delete().eq('team_id', team.id);
@@ -710,5 +897,8 @@ module.exports = {
   isEditDeadlinePassed,
   getRegistrationDeadline,
   setRegistrationDeadline,
-  isRegistrationDeadlinePassed
+  isRegistrationDeadlinePassed,
+  saveTeamReferralRecord,
+  getTeamReferral,
+  getAllTeamReferrals
 };

@@ -29,6 +29,7 @@ const state = {
     teamName: '',
     track: 'To be decided (Post-Vibecoding)',
     projectTitle: '',
+    referral: '',
     leader: {
       fullName: '',
       regNumber: '',
@@ -865,6 +866,8 @@ function handleStep1Next() {
   const projectTitleEl = document.getElementById('project-title');
   const track = trackEl ? trackEl.value : 'To be decided (Post-Vibecoding)';
   const projectTitle = projectTitleEl ? projectTitleEl.value.trim() : '';
+  const referralEl = document.getElementById('referral');
+  const referral = referralEl ? referralEl.value.trim() : '';
 
   const leaderName = document.getElementById('leader-name').value.trim();
   const leaderReg = document.getElementById('leader-reg').value.trim();
@@ -947,6 +950,7 @@ function handleStep1Next() {
   state.teamDraft.teamName = teamName;
   state.teamDraft.track = track;
   state.teamDraft.projectTitle = projectTitle;
+  state.teamDraft.referral = referral;
   state.teamDraft.leader = {
     fullName: leaderName,
     regNumber: leaderReg,
@@ -1351,6 +1355,10 @@ function syncDraftFromDOM() {
   if (teamNameInput && teamNameInput.value.trim()) {
     state.teamDraft.teamName = teamNameInput.value.trim();
   }
+  const refInput = document.getElementById('referral');
+  if (refInput) {
+    state.teamDraft.referral = refInput.value.trim();
+  }
 
   if (!state.teamDraft.leader) {
     state.teamDraft.leader = { fullName: '', regNumber: '', collegeEmail: '', phone: '' };
@@ -1467,6 +1475,9 @@ function populateReviewStep() {
   const teamNameEl = document.getElementById('review-team-name');
   if (teamNameEl) teamNameEl.textContent = state.teamDraft.teamName || '-';
 
+  const referralEl = document.getElementById('review-team-referral');
+  if (referralEl) referralEl.textContent = state.teamDraft.referral || 'None';
+
   const trackEl = document.getElementById('review-team-track');
   if (trackEl) trackEl.textContent = state.teamDraft.track || 'To be selected post-Vibecoding round';
 
@@ -1556,6 +1567,7 @@ async function handleConfirmAndProceedToPayment() {
             teamName: state.teamDraft.teamName,
             track: state.teamDraft.track,
             projectTitle: state.teamDraft.projectTitle,
+            referral: state.teamDraft.referral || '',
             members: [
               {
                 fullName: state.teamDraft.leader.fullName,
@@ -1609,6 +1621,7 @@ async function handleConfirmAndProceedToPayment() {
       teamName: state.teamDraft.teamName,
       track: state.teamDraft.track,
       projectTitle: state.teamDraft.projectTitle,
+      referral: state.teamDraft.referral || '',
       verificationToken,
       members: [
         {
@@ -2173,6 +2186,7 @@ async function handleResumeRegistration(identifier) {
     state.teamDraft.teamName = team.teamName;
     state.teamDraft.track = team.track || 'To be decided (Post-Vibecoding)';
     state.teamDraft.projectTitle = team.projectTitle || '';
+    state.teamDraft.referral = team.referral || '';
 
     const leader = team.leader || (team.members && team.members.find(m => m.isLeader)) || (team.members && team.members[0]);
     if (leader) {
@@ -2197,6 +2211,7 @@ async function handleResumeRegistration(identifier) {
       const lEmailInput = document.getElementById('leader-email');
       const lPhoneInput = document.getElementById('leader-phone');
       const tNameInput = document.getElementById('team-name');
+      const refInput = document.getElementById('referral');
       if (lNameInput) lNameInput.value = leader.fullName;
       if (lRegInput) lRegInput.value = leader.regNumber;
       if (lEmailInput) {
@@ -2205,6 +2220,7 @@ async function handleResumeRegistration(identifier) {
       }
       if (lPhoneInput) lPhoneInput.value = leader.phone;
       if (tNameInput) tNameInput.value = team.teamName;
+      if (refInput) refInput.value = team.referral || '';
 
       // Residence inputs
       const lResType = document.getElementById('leader-residence-type');
@@ -2494,6 +2510,8 @@ async function handleLookupEdit(isRestoring = false) {
     document.getElementById('edit-team-name').value = teamNameValue;
     document.getElementById('edit-team-track').value = team.track || 'AI & Intelligent Systems';
     document.getElementById('edit-project-title').value = team.project_title || team.projectTitle || '';
+    const editRefEl = document.getElementById('edit-referral');
+    if (editRefEl) editRefEl.value = team.referral || '';
 
     // Leader Details
     const leader = team.leader || (team.members && team.members.find(m => m.is_leader === true || m.isLeader === true)) || (team.members && team.members[0]) || {};
@@ -2758,6 +2776,7 @@ async function handleSaveTeamEdit(e) {
   const teamName = document.getElementById('edit-team-name')?.value.trim();
   const track = document.getElementById('edit-team-track')?.value;
   const projectTitle = document.getElementById('edit-project-title')?.value.trim();
+  const referral = document.getElementById('edit-referral')?.value.trim() || '';
 
   const leaderName = document.getElementById('edit-leader-name')?.value.trim();
   const leaderReg = document.getElementById('edit-leader-reg')?.value.trim();
@@ -2920,6 +2939,7 @@ async function handleSaveTeamEdit(e) {
         teamName,
         track,
         projectTitle,
+        referral,
         members: formattedMembers
       })
     });

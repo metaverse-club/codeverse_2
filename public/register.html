@@ -302,6 +302,15 @@
             <span class="input-hint">Must be unique across all hackathon teams.</span>
           </div>
 
+          <div class="form-group">
+            <label for="referral" class="form-label">
+              Referral Code <span class="optional-pill" style="font-weight: 500; font-size: 0.85rem; color: var(--text-muted);">(Optional)</span>
+            </label>
+            <input type="text" id="referral" class="form-input" placeholder="e.g. AMBASSADOR2026 or REF-CODE"
+              autocomplete="off">
+            <span class="input-hint">Optional: Enter referral code if you were referred by a campus ambassador, community partner, or friend.</span>
+          </div>
+
           <!-- Vibecoding Round Deferred Track Notice -->
           <div class="info-alert"
             style="margin-bottom: 24px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 14px 18px; color: #93c5fd;">
@@ -565,6 +574,10 @@
             <div>
               <span class="review-label">Team Name</span>
               <h3 class="review-team-name" id="review-team-name">-</h3>
+            </div>
+            <div>
+              <span class="review-label">Referral Code</span>
+              <div class="badge-track" id="review-team-referral" style="background: rgba(99, 102, 241, 0.12); color: #818cf8; border-color: rgba(99, 102, 241, 0.3);">None</div>
             </div>
             <div class="text-right">
               <span class="review-label">Track Selection</span>
@@ -1093,6 +1106,14 @@
             </label>
             <input type="text" id="edit-project-title" class="form-input"
               placeholder="e.g. Decentralized Credential Verification Protocol">
+          </div>
+
+          <div class="form-group mb-4">
+            <label for="edit-referral" class="form-label">
+              Referral Code <small class="text-muted">(Optional)</small>
+            </label>
+            <input type="text" id="edit-referral" class="form-input"
+              placeholder="e.g. AMBASSADOR2026 or REF-CODE">
           </div>
 
           <!-- Section 2: Team Leader Details -->

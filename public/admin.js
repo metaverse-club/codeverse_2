@@ -273,6 +273,12 @@ function bindDashboardEvents() {
 
   // Admin Edit Form Submit
   document.getElementById('admin-edit-form')?.addEventListener('submit', handleAdminEditSubmit);
+
+  // Referrals Modal Listeners
+  document.getElementById('btn-view-referrals')?.addEventListener('click', openReferralsModal);
+  document.getElementById('btn-referrals-modal-close')?.addEventListener('click', closeReferralsModal);
+  document.getElementById('btn-referrals-modal-back')?.addEventListener('click', closeReferralsModal);
+  document.getElementById('btn-close-referrals-bottom')?.addEventListener('click', closeReferralsModal);
 }
 
 // ==========================================
@@ -660,6 +666,7 @@ function renderTeamsTable(teams) {
         <td>
           <span class="table-team-name">${escapeHtml(team.teamName)}</span>
           <span class="table-team-track">${escapeHtml(team.track)}</span>
+          ${team.referral ? `<span class="badge-status-pill text-xs" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; margin-top: 4px; display: inline-block;">Ref: ${escapeHtml(team.referral)}</span>` : ''}
         </td>
         <td>
           <span class="table-contact-name">${escapeHtml(leader.fullName || 'N/A')}</span>
@@ -835,6 +842,8 @@ function openDetailModal(team) {
   document.getElementById('modal-team-reg-id').textContent = team.registrationId;
   document.getElementById('modal-track-val').textContent = team.track;
   document.getElementById('modal-project-val').textContent = team.projectTitle || 'Not specified';
+  const refValEl = document.getElementById('modal-referral-val');
+  if (refValEl) refValEl.textContent = team.referral || 'None';
   document.getElementById('modal-created-val').textContent = new Date(team.createdAt).toLocaleString('en-IN');
 
   // Populate Roster Table
@@ -906,6 +915,8 @@ function openAdminEditModal(team) {
 
   // Set team & track
   document.getElementById('edit-team-name').value = team.teamName || '';
+  const editTeamRefEl = document.getElementById('edit-team-referral');
+  if (editTeamRefEl) editTeamRefEl.value = team.referral || '';
   document.getElementById('edit-team-track').value = team.track || 'AI & Intelligent Systems';
   document.getElementById('edit-team-status').value = team.status || 'PENDING_VERIFICATION';
   document.getElementById('edit-project-title').value = team.projectTitle || '';
@@ -1069,6 +1080,7 @@ async function handleAdminEditSubmit(e) {
     track: document.getElementById('edit-team-track').value,
     status: document.getElementById('edit-team-status').value,
     projectTitle: document.getElementById('edit-project-title').value.trim(),
+    referral: document.getElementById('edit-team-referral')?.value.trim() || '',
     members: activeMembers,
     payment: {
       utrNumber: document.getElementById('edit-pay-utr').value.trim(),
@@ -1180,4 +1192,49 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * Open Team Referrals Log Modal
+ */
+async function openReferralsModal() {
+  const modal = document.getElementById('admin-referrals-modal');
+  const tbody = document.getElementById('referrals-table-body');
+  const countText = document.getElementById('referrals-count-text');
+  if (!modal || !tbody) return;
+
+  modal.classList.remove('hidden');
+  tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">Loading referrals from team_referrals table...</td></tr>`;
+
+  try {
+    const res = await authFetch('/api/admin/referrals');
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to fetch referrals.');
+    }
+
+    const referrals = data.referrals || [];
+    if (countText) countText.textContent = `${referrals.length} recorded referral(s)`;
+
+    if (referrals.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">No referrals recorded yet.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = referrals.map((r, idx) => `
+      <tr>
+        <td class="monospace">${idx + 1}</td>
+        <td><strong>${escapeHtml(r.team_name || '-')}</strong></td>
+        <td><span class="badge-status-pill text-xs" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; font-weight: 600;">${escapeHtml(r.referral || 'None')}</span></td>
+        <td class="monospace">${escapeHtml(r.registration_id || '-')}</td>
+        <td class="text-xs text-muted">${r.created_at ? new Date(r.created_at).toLocaleString('en-IN') : '-'}</td>
+      </tr>
+    `).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-rose">Error loading referrals: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function closeReferralsModal() {
+  document.getElementById('admin-referrals-modal')?.classList.add('hidden');
 }

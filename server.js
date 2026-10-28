@@ -312,14 +312,14 @@ app.get('/api/team/edit-info/:registrationId', async (req, res) => {
  */
 app.put('/api/team/update', async (req, res) => {
   try {
-    const { registrationId, teamName, track, projectTitle, members, leaderEmail } = req.body;
+    const { registrationId, teamName, track, projectTitle, members, leaderEmail, referral } = req.body;
 
     if (!registrationId) {
       return res.status(400).json({ success: false, error: 'Registration ID is required.' });
     }
 
     // 1. Sanitize against HTML/CSS injection
-    if (containsMaliciousHtml(teamName) || containsMaliciousHtml(projectTitle)) {
+    if (containsMaliciousHtml(teamName) || containsMaliciousHtml(projectTitle) || containsMaliciousHtml(referral)) {
       return res.status(400).json({ success: false, error: 'HTML tags or script injections are not allowed in team details.' });
     }
 
@@ -368,6 +368,7 @@ app.put('/api/team/update', async (req, res) => {
       teamName,
       track,
       projectTitle,
+      referral: referral !== undefined ? (referral ? referral.trim() : null) : undefined,
       members
     });
 
@@ -520,14 +521,14 @@ app.post('/api/register', registrationLimiter, async (req, res) => {
       });
     }
 
-    const { teamName, track, projectTitle, members, verificationToken } = req.body;
+    const { teamName, track, projectTitle, members, verificationToken, referral } = req.body;
 
     if (!teamName || !teamName.trim()) {
       return res.status(400).json({ success: false, error: 'Team name is required.' });
     }
 
     // 2. Sanitize against HTML/CSS injection
-    if (containsMaliciousHtml(teamName) || containsMaliciousHtml(projectTitle)) {
+    if (containsMaliciousHtml(teamName) || containsMaliciousHtml(projectTitle) || containsMaliciousHtml(referral)) {
       return res.status(400).json({ success: false, error: 'HTML tags and script injections are not allowed.' });
     }
 
@@ -582,6 +583,7 @@ app.post('/api/register', registrationLimiter, async (req, res) => {
       teamName,
       track,
       projectTitle,
+      referral: referral ? referral.trim() : null,
       members
     });
 
@@ -952,6 +954,19 @@ app.get('/api/admin/teams', requireAdminAuth, async (req, res) => {
     const { status, search } = req.query;
     const teams = await db.getAllTeams({ status, search });
     res.json({ success: true, count: teams.length, teams });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/admin/referrals
+ * Returns all records from the team_referrals table.
+ */
+app.get('/api/admin/referrals', requireAdminAuth, async (req, res) => {
+  try {
+    const referrals = await db.getAllTeamReferrals();
+    res.json({ success: true, count: referrals.length, referrals });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

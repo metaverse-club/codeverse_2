@@ -106,6 +106,9 @@
         </p>
       </div>
       <div class="admin-actions-top">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-view-referrals" title="View team_referrals table records">
+          👥 Referrals Table
+        </button>
         <button type="button" class="btn btn-secondary btn-sm" id="btn-refresh-data">
           🔄 Refresh
         </button>
@@ -298,6 +301,10 @@
             <span id="modal-project-val">-</span>
           </div>
           <div class="modal-info-pill">
+            <span class="info-label">Referral:</span>
+            <strong id="modal-referral-val" style="color: #818cf8;">-</strong>
+          </div>
+          <div class="modal-info-pill">
             <span class="info-label">Submitted:</span>
             <span id="modal-created-val">-</span>
           </div>
@@ -424,6 +431,10 @@
             <div class="form-group">
               <label class="form-label" for="edit-team-name">Team Name:</label>
               <input type="text" id="edit-team-name" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="edit-team-referral">Referral Code (Optional):</label>
+              <input type="text" id="edit-team-referral" class="form-input" placeholder="e.g. AMBASSADOR2026">
             </div>
             <div class="form-group">
               <label class="form-label" for="edit-team-track">Innovation Sector / Track:</label>
@@ -711,6 +722,48 @@
     <div class="lightbox-content">
       <button type="button" class="modal-close lightbox-close" id="lightbox-close">&times;</button>
       <img id="lightbox-img" src="" alt="Payment Receipt Proof Enclosure" class="lightbox-image">
+    </div>
+  </div>
+
+  <!-- ================= REFERRALS MODAL ================= -->
+  <div class="modal-overlay hidden" id="admin-referrals-modal">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-referrals-modal-back">Back</button>
+          <div>
+            <h3 class="modal-title">👥 Team Referrals Log</h3>
+            <span class="modal-subtitle">Direct records from the <code>team_referrals</code> table</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close" id="btn-referrals-modal-close" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>S.No</th>
+                <th>Team Name</th>
+                <th>Referral Code</th>
+                <th>Registration ID</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="referrals-table-body">
+              <tr>
+                <td colspan="5" class="text-center py-4 text-muted">Loading referrals...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="text-xs text-muted" id="referrals-count-text">0 recorded referrals</span>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-close-referrals-bottom">Close</button>
+      </div>
     </div>
   </div>
 
