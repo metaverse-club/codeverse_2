@@ -525,6 +525,87 @@ async function syncDedicatedTables(teamId) {
         );
       }
     }
+
+    // Also sync to Supabase physical tables if they are tables
+    try {
+      if (isVit) {
+        await supabase.from('vit_teams').upsert([{
+          id: team.id,
+          registration_id: team.registration_id,
+          team_name: team.team_name,
+          track: team.track || 'Open Innovation',
+          project_title: team.project_title || '',
+          member_count: team.member_count || memList.length,
+          status: team.status || 'PENDING_PAYMENT',
+          leader_name: leader.full_name || '',
+          leader_reg_number: leader.reg_number || '',
+          leader_email: leader.college_email || '',
+          leader_phone: leader.phone || '',
+          leader_residence_type: leader.residence_type || 'HOSTELLER',
+          leader_hostel_block: leader.hostel_block || '',
+          leader_room_no: leader.room_no || '',
+          leader_day_scholar_location: leader.day_scholar_location || '',
+          referral: team.referral || '',
+          total_fee: team.total_fee || 250,
+          payment_status: paymentStatus,
+          utr_number: utr,
+          updated_at: new Date().toISOString()
+        }]);
+      } else {
+        await supabase.from('non_vit_teams').upsert([{
+          id: team.id,
+          registration_id: team.registration_id,
+          team_name: team.team_name,
+          track: team.track || 'Open Innovation',
+          project_title: team.project_title || '',
+          member_count: team.member_count || memList.length,
+          status: team.status || 'PENDING_PAYMENT',
+          leader_name: leader.full_name || '',
+          leader_college_name: leader.college_name || 'External College',
+          leader_email: leader.college_email || '',
+          leader_phone: leader.phone || '',
+          leader_year_of_study: leader.year_of_study || '',
+          leader_degree: leader.degree || '',
+          has_food: Boolean(team.has_food),
+          food_count: team.food_count || 0,
+          food_amount: team.food_amount || 0,
+          total_fee: team.total_fee || 250,
+          referral: team.referral || '',
+          payment_status: paymentStatus,
+          utr_number: utr,
+          updated_at: new Date().toISOString()
+        }]);
+      }
+
+      for (const m of memList) {
+        const isLeader = Boolean(m.is_leader);
+        await supabase.from('all_participants').upsert([{
+          id: m.id,
+          team_id: team.id,
+          registration_id: team.registration_id,
+          team_name: team.team_name,
+          category: isVit ? 'VIT' : 'NON_VIT',
+          is_leader: isLeader,
+          role: isLeader ? 'Leader' : 'Member',
+          full_name: m.full_name || '',
+          college_name: isVit ? 'VIT Bhopal University' : (m.college_name || 'External College'),
+          reg_number: m.reg_number || '',
+          college_email: m.college_email || '',
+          phone: m.phone || '',
+          year_of_study: m.year_of_study || '',
+          degree: m.degree || '',
+          residence_type: m.residence_type || (isVit ? 'HOSTELLER' : ''),
+          hostel_block: m.hostel_block || '',
+          room_no: m.room_no || '',
+          day_scholar_location: m.day_scholar_location || '',
+          residence_address: m.residence_address || '',
+          wants_food: Boolean(m.wants_food),
+          payment_status: paymentStatus
+        }]);
+      }
+    } catch (supaSyncErr) {
+      // If vit_teams or all_participants is still a view or doesn't allow upsert, ignore safely
+    }
   } catch (err) {
     console.warn('[DB] syncDedicatedTables notice:', err.message);
   }
