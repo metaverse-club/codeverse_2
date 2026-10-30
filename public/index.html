@@ -117,9 +117,14 @@
           <span class="nav-btn-label">Edit Details</span>
         </button>
 
-        <a href="register.html" class="nav-btn nav-btn-primary nav-btn-reg-top" id="nav-reg-btn" title="Register Squad">
-          <span>Register</span>
-        </a>
+        <div class="nav-reg-group" style="display: flex; gap: 8px; align-items: center;">
+          <a href="register.html" class="nav-btn nav-btn-primary nav-btn-reg-top" id="nav-reg-btn" title="Register Squad for VIT Bhopal Students">
+            <span>🎓 VIT Register</span>
+          </a>
+          <a href="register-non-vit.html" class="nav-btn nav-btn-secondary" id="nav-reg-non-vit-btn" style="border-color: #818cf8; color: #c7d2fe; background: rgba(99, 102, 241, 0.15);" title="Register Squad for Non-VIT / External Students">
+            <span>🌐 Non-VIT</span>
+          </a>
+        </div>
 
         <!-- Mobile Menu Toggle Button -->
         <button type="button" class="nav-hamburger-btn" id="nav-hamburger-btn" aria-label="Toggle navigation menu"
@@ -165,8 +170,11 @@
           <button type="button" class="btn btn-secondary btn-full" id="drawer-edit-btn">
             ✏️ Edit Team Details
           </button>
-          <a href="register.html" class="btn btn-primary btn-full">
-            🚀 Register Squad Now
+          <a href="register.html" class="btn btn-primary btn-full" style="margin-bottom: 8px;">
+            🎓 Registration for VIT Students
+          </a>
+          <a href="register-non-vit.html" class="btn btn-secondary btn-full" style="border-color: #818cf8; color: #c7d2fe; background: rgba(99, 102, 241, 0.15);">
+            🌐 Registration for Non-VIT Students
           </a>
         </div>
       </div>
@@ -210,13 +218,17 @@
       </p>
 
       <!-- CTA Action Buttons -->
-      <div class="hero-cta-group" data-reveal>
+      <div class="hero-cta-group" data-reveal style="flex-wrap: wrap; gap: 14px;">
         <a href="register.html" class="btn btn-primary btn-glow" id="hero-register-btn">
-          <span class="btn-text">Register Your Team</span>
+          <span class="btn-text">🎓 Registration for VIT Students</span>
           <span class="btn-arrow">→</span>
         </a>
-        <a href="#sectors" class="btn btn-glass">
-          <span>Explore Sectors & Bounties ↓</span>
+        <a href="register-non-vit.html" class="btn btn-secondary btn-glow" id="hero-register-non-vit-btn" style="border-color: #818cf8; color: #c7d2fe; background: rgba(99, 102, 241, 0.15);">
+          <span class="btn-text">🌐 Registration for Non-VIT</span>
+          <span class="btn-arrow">→</span>
+        </a>
+        <a href="#rounds" class="btn btn-glass">
+          <span>Battle Structure ↓</span>
         </a>
       </div>
 
@@ -578,6 +590,9 @@
             <li>✓ Digital Certificates & Alchemyst credits</li>
             <li>✓ Alchemyst Credits worth $50</li>
           </ul>
+          <div style="margin-top: 14px; padding: 8px 12px; background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.28); border-radius: 6px; font-size: 0.82rem; color: #c7d2fe;">
+            📢 <strong>External / Non-VIT Squads:</strong> Bypass Round 1 entirely! Direct entry to Round 2 (Offline Dev Sprint @ VIT Bhopal).
+          </div>
         </div>
 
         <!-- Round 2 -->
@@ -880,9 +895,12 @@
 
           </div>
 
-          <div class="cta-button-row">
+          <div class="cta-button-row" style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
             <a href="register.html" class="btn btn-primary btn-glow">
-              <span>🚀 Register Squad →</span>
+              <span>🎓 Registration for VIT Students →</span>
+            </a>
+            <a href="register-non-vit.html" class="btn btn-secondary btn-glow" style="border-color: #818cf8; color: #c7d2fe; background: rgba(99, 102, 241, 0.15);">
+              <span>🌐 Registration for Non-VIT Students →</span>
             </a>
           </div>
         </div>

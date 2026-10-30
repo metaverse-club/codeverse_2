@@ -236,6 +236,15 @@
       </div>
 
       <div class="filter-group">
+        <label for="admin-filter-type" class="filter-label">Category:</label>
+        <select id="admin-filter-type" class="filter-select">
+          <option value="ALL" selected>All Categories (VIT & Non-VIT)</option>
+          <option value="VIT">VIT Students Only</option>
+          <option value="NON_VIT">Non-VIT Students Only</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
         <label for="admin-filter-status" class="filter-label">Verification Status:</label>
         <select id="admin-filter-status" class="filter-select">
           <option value="ALL">All Fully Submitted</option>
@@ -293,6 +302,14 @@
         <!-- Team & Track Banner -->
         <div class="modal-info-row">
           <div class="modal-info-pill">
+            <span class="info-label">Category:</span>
+            <span id="modal-type-val" class="badge-status-pill badge-vit">VIT</span>
+          </div>
+          <div class="modal-info-pill">
+            <span class="info-label">Dinner Pass:</span>
+            <strong id="modal-food-val">-</strong>
+          </div>
+          <div class="modal-info-pill">
             <span class="info-label">Track:</span>
             <strong id="modal-track-val">-</strong>
           </div>
@@ -322,7 +339,7 @@
                   <th>Reg. / Roll Number</th>
                   <th>College Email</th>
                   <th>Phone Number</th>
-                  <th>Residence / Hostel Info</th>
+                  <th>Residence / College & Food</th>
                 </tr>
               </thead>
               <tbody id="modal-roster-tbody">

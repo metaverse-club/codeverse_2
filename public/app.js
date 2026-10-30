@@ -91,7 +91,10 @@ function initTurnstile() {
   const container = document.getElementById('cf-turnstile-container');
   if (!container) return;
 
-  const siteKey = (state.hackathonConfig && state.hackathonConfig.turnstileSiteKey) || '1x00000000000000000000AA';
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const siteKey = isLocal 
+    ? '1x00000000000000000000AA' 
+    : ((state.hackathonConfig && state.hackathonConfig.turnstileSiteKey) || '0x4AAAAAAFe4Z-FGGrCOS8QK');
 
   const renderWidget = () => {
     if (window.turnstile && typeof window.turnstile.render === 'function') {

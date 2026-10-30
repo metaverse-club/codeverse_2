@@ -187,6 +187,7 @@ function bindDashboardEvents() {
   // Search & Filter
   const searchInput = document.getElementById('admin-search-input');
   const filterSelect = document.getElementById('admin-filter-status');
+  const categorySelect = document.getElementById('admin-filter-type');
 
   let debounceTimer;
   searchInput?.addEventListener('input', () => {
@@ -195,6 +196,7 @@ function bindDashboardEvents() {
   });
 
   filterSelect?.addEventListener('change', loadTeams);
+  categorySelect?.addEventListener('change', loadTeams);
 
   // Refresh
   document.getElementById('btn-refresh-data')?.addEventListener('click', async () => {
@@ -604,6 +606,7 @@ async function loadTeams() {
   const tbody = document.getElementById('admin-table-body');
   const search = document.getElementById('admin-search-input')?.value.trim() || '';
   const status = document.getElementById('admin-filter-status')?.value || 'ALL';
+  const category = document.getElementById('admin-filter-type')?.value || 'ALL';
 
   try {
     const query = new URLSearchParams({ search, status });
@@ -613,7 +616,12 @@ async function loadTeams() {
     if (!data.success) throw new Error(data.error);
 
     allTeams = data.teams;
-    renderTeamsTable(data.teams);
+    let filteredTeams = data.teams;
+    if (category !== 'ALL') {
+      filteredTeams = filteredTeams.filter(t => (t.teamType || 'VIT') === category);
+    }
+
+    renderTeamsTable(filteredTeams);
   } catch (err) {
     if (tbody) {
       tbody.innerHTML = `
@@ -652,11 +660,14 @@ function renderTeamsTable(teams) {
     const leader = team.leader || {};
     const payment = team.payment || {};
     const status = team.status;
+    const isNonVit = team.teamType === 'NON_VIT';
 
     let statusBadgeText = status;
     if (status === 'PENDING_VERIFICATION') statusBadgeText = 'Pending Verification';
     if (status === 'VERIFIED') statusBadgeText = 'Verified';
     if (status === 'REJECTED') statusBadgeText = 'Rejected';
+
+    const feeDisplay = payment.amountPaid || team.totalFee || 250;
 
     return `
       <tr>
@@ -666,18 +677,25 @@ function renderTeamsTable(teams) {
         <td>
           <span class="table-team-name">${escapeHtml(team.teamName)}</span>
           <span class="table-team-track">${escapeHtml(team.track)}</span>
-          ${team.referral ? `<span class="badge-status-pill text-xs" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; margin-top: 4px; display: inline-block;">Ref: ${escapeHtml(team.referral)}</span>` : ''}
+          <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-top: 5px;">
+            <span class="badge-status-pill text-xs ${isNonVit ? 'badge-non-vit' : 'badge-vit'}">
+              ${isNonVit ? '🌐 Non-VIT' : '🎓 VIT'}
+            </span>
+            ${team.hasFood ? `<span class="badge-status-pill text-xs badge-food">🍽️ Food (${team.foodCount || 0})</span>` : ''}
+            ${team.referral ? `<span class="badge-status-pill text-xs" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">Ref: ${escapeHtml(team.referral)}</span>` : ''}
+          </div>
         </td>
         <td>
           <span class="table-contact-name">${escapeHtml(leader.fullName || 'N/A')}</span>
           <span class="table-contact-sub">${escapeHtml(leader.collegeEmail || '')} • ${escapeHtml(leader.phone || '')}</span>
+          ${isNonVit && leader.collegeName ? `<div class="text-xs text-muted" style="margin-top:2px;">🏛️ ${escapeHtml(leader.collegeName)}</div>` : ''}
         </td>
         <td>
           <span class="badge-status-pill">${team.memberCount} Members</span>
         </td>
         <td>
-          <span class="font-bold">${escapeHtml(payment.paymentMethod)} (₹${payment.amountPaid || 400})</span>
-          <div class="table-contact-sub monospace">UTR: ${escapeHtml(payment.utrNumber)}</div>
+          <span class="font-bold">${escapeHtml(payment.paymentMethod || 'UPI')} (₹${feeDisplay})</span>
+          <div class="table-contact-sub monospace">UTR: ${escapeHtml(payment.utrNumber || 'N/A')}</div>
         </td>
         <td>
           ${payment.proofFilePath ? `
@@ -816,8 +834,21 @@ async function confirmDeleteTeam(registrationId, teamName) {
 /**
  * Format residence information as a styled badge and details snippet for Admin
  */
-function formatAdminResidence(m) {
+function formatAdminResidence(m, team) {
   if (!m) return '-';
+  const isNonVit = team?.teamType === 'NON_VIT' || m.collegeName || m.college_name;
+  if (isNonVit) {
+    const clg = m.collegeName || m.college_name || 'External College';
+    const yr = m.yearOfStudy || m.year_of_study || '';
+    const deg = m.degree || '';
+    const wantsFood = m.wantsFood || m.wants_food;
+    return `
+      <span class="badge-academic">🏛️ ${escapeHtml(clg)}</span>
+      <div class="text-xs text-muted" style="margin-top:2px;">${escapeHtml(yr)}${yr && deg ? ' • ' : ''}${escapeHtml(deg)}</div>
+      <div style="margin-top:3px;">${wantsFood ? '<span class="badge-status-pill badge-food text-xs">🍽️ Dinner Pass</span>' : '<span class="text-xs text-dim">No Food</span>'}</div>
+    `;
+  }
+
   const isHostel = (m.residenceType || m.residence_type) === 'HOSTELLER';
   if (isHostel) {
     const block = m.hostelBlock || m.hostel_block || 'Hostel';
@@ -840,6 +871,19 @@ function openDetailModal(team) {
 
   document.getElementById('modal-team-title').textContent = team.teamName;
   document.getElementById('modal-team-reg-id').textContent = team.registrationId;
+
+  const typeEl = document.getElementById('modal-type-val');
+  if (typeEl) {
+    const isNonVit = team.teamType === 'NON_VIT';
+    typeEl.textContent = isNonVit ? '🌐 Non-VIT (Direct Entry)' : '🎓 VIT Student';
+    typeEl.className = `badge-status-pill ${isNonVit ? 'badge-non-vit' : 'badge-vit'}`;
+  }
+
+  const foodEl = document.getElementById('modal-food-val');
+  if (foodEl) {
+    foodEl.textContent = team.hasFood ? `🍽️ Yes (${team.foodCount || 0} Passes - ₹${team.foodAmount || ((team.foodCount || 0) * 200)})` : 'None';
+  }
+
   document.getElementById('modal-track-val').textContent = team.track;
   document.getElementById('modal-project-val').textContent = team.projectTitle || 'Not specified';
   const refValEl = document.getElementById('modal-referral-val');
@@ -859,7 +903,7 @@ function openDetailModal(team) {
       <td class="monospace">
         <a href="tel:${escapeHtml(m.phone)}">${escapeHtml(m.phone)}</a>
       </td>
-      <td>${formatAdminResidence(m)}</td>
+      <td>${formatAdminResidence(m, team)}</td>
     </tr>
   `).join('');
 

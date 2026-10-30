@@ -29,18 +29,52 @@ try {
 // Helper functions to map Supabase snake_case to app camelCase
 function mapTeam(row) {
   if (!row) return null;
-  return {
+  const mapped = {
     id: row.id,
     registrationId: row.registration_id,
     teamName: row.team_name,
+    teamType: row.team_type || 'VIT',
     track: row.track,
     projectTitle: row.project_title,
     referral: row.referral || '',
+    hasFood: row.has_food === true || row.has_food === 1 || row.has_food === 'true',
+    foodCount: Number(row.food_count) || 0,
+    foodAmount: Number(row.food_amount) || 0,
+    totalFee: Number(row.total_fee) || 250,
     memberCount: row.member_count,
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
+
+  // If local SQLite is available, overlay any non-VIT or food attributes
+  if (sqliteDb && (row.id || row.registration_id)) {
+    try {
+      const sqlRow = sqliteDb.prepare(`
+        SELECT team_type, referral, has_food, food_count, food_amount, total_fee 
+        FROM teams 
+        WHERE id = ? OR registration_id = ?
+      `).get(row.id || '', row.registration_id || '');
+      if (sqlRow) {
+        if (sqlRow.team_type) mapped.teamType = sqlRow.team_type;
+        if (sqlRow.referral && !mapped.referral) mapped.referral = sqlRow.referral;
+        if (sqlRow.has_food !== null && sqlRow.has_food !== undefined) {
+          mapped.hasFood = Boolean(sqlRow.has_food);
+        }
+        if (sqlRow.food_count !== null && sqlRow.food_count !== undefined) {
+          mapped.foodCount = Number(sqlRow.food_count);
+        }
+        if (sqlRow.food_amount !== null && sqlRow.food_amount !== undefined) {
+          mapped.foodAmount = Number(sqlRow.food_amount);
+        }
+        if (sqlRow.total_fee !== null && sqlRow.total_fee !== undefined) {
+          mapped.totalFee = Number(sqlRow.total_fee);
+        }
+      }
+    } catch (e) {}
+  }
+
+  return mapped;
 }
 
 function mapMember(row, residenceMetadata = {}) {
@@ -50,15 +84,17 @@ function mapMember(row, residenceMetadata = {}) {
   const meta = residenceMetadata[regKey] || residenceMetadata[emailKey] || {};
 
   let residenceType = row.residence_type;
-  if (!residenceType || (residenceType === 'HOSTELLER' && !row.hostel_block && !row.room_no && (meta.residenceType || meta.dayScholarLocation))) {
-    residenceType = meta.residenceType || residenceType || 'HOSTELLER';
+  if (!residenceType && (row.hostel_block || row.room_no)) {
+    residenceType = 'HOSTELLER';
+  } else if (!residenceType && (meta.residenceType || meta.dayScholarLocation)) {
+    residenceType = meta.residenceType || 'HOSTELLER';
   }
 
-  return {
+  const mapped = {
     id: row.id,
     teamId: row.team_id,
     fullName: row.full_name,
-    regNumber: row.reg_number,
+    regNumber: row.reg_number || meta.regNumber || '',
     collegeEmail: row.college_email,
     phone: row.phone,
     isLeader: row.is_leader === true || row.is_leader === 'true' || row.is_leader === 1,
@@ -68,8 +104,33 @@ function mapMember(row, residenceMetadata = {}) {
     dayScholarType: row.day_scholar_type || meta.dayScholarType || '',
     dayScholarLocation: row.day_scholar_location || meta.dayScholarLocation || '',
     residenceAddress: row.residence_address || meta.residenceAddress || '',
+    collegeName: row.college_name || meta.collegeName || '',
+    yearOfStudy: row.year_of_study || meta.yearOfStudy || '',
+    degree: row.degree || meta.degree || '',
+    wantsFood: row.wants_food === true || row.wants_food === 1 || row.wants_food === 'true' || meta.wantsFood === true,
     createdAt: row.created_at
   };
+
+  // If local SQLite is available, overlay any member attributes
+  if (sqliteDb && (row.team_id || emailKey)) {
+    try {
+      const sqlMem = sqliteDb.prepare(`
+        SELECT college_name, year_of_study, degree, wants_food 
+        FROM team_members 
+        WHERE (team_id = ? AND LOWER(college_email) = ?) OR LOWER(college_email) = ?
+      `).get(row.team_id || '', emailKey, emailKey);
+      if (sqlMem) {
+        if (sqlMem.college_name && !mapped.collegeName) mapped.collegeName = sqlMem.college_name;
+        if (sqlMem.year_of_study && !mapped.yearOfStudy) mapped.yearOfStudy = sqlMem.year_of_study;
+        if (sqlMem.degree && !mapped.degree) mapped.degree = sqlMem.degree;
+        if (sqlMem.wants_food !== null && sqlMem.wants_food !== undefined) {
+          mapped.wantsFood = mapped.wantsFood || Boolean(sqlMem.wants_food);
+        }
+      }
+    } catch (e) {}
+  }
+
+  return mapped;
 }
 
 async function saveTeamResidenceMetadata(teamId, members = []) {
@@ -77,8 +138,10 @@ async function saveTeamResidenceMetadata(teamId, members = []) {
   const metaObj = {};
   for (const m of members) {
     const regKey = (m.regNumber || m.reg_number || '').trim().toUpperCase();
-    if (regKey) {
-      metaObj[regKey] = {
+    const emailKey = (m.collegeEmail || m.college_email || '').trim().toLowerCase();
+    const key = regKey || emailKey;
+    if (key) {
+      metaObj[key] = {
         residenceType: m.residenceType || m.residence_type || 'HOSTELLER',
         hostelBlock: m.hostelBlock || m.hostel_block || '',
         roomNo: m.roomNo || m.room_no || '',
@@ -86,16 +149,21 @@ async function saveTeamResidenceMetadata(teamId, members = []) {
         dayScholarType: m.dayScholarType || m.day_scholar_type || '',
         dayScholarLocation: m.dayScholarLocation || m.day_scholar_location || '',
         residenceAddress: m.residenceAddress || m.residence_address || '',
-        commuteMode: m.commuteMode || m.commute_mode || ''
+        commuteMode: m.commuteMode || m.commute_mode || '',
+        collegeName: m.collegeName || m.college_name || '',
+        yearOfStudy: m.yearOfStudy || m.year_of_study || '',
+        degree: m.degree || '',
+        wantsFood: Boolean(m.wantsFood || m.wants_food)
       };
     }
   }
 
-  // Sync to local SQLite if available (optional)
+  // Sync to local SQLite if available
   try {
     if (sqliteDb) {
       for (const m of members) {
         const reg = (m.regNumber || m.reg_number || '').trim().toUpperCase();
+        const email = (m.collegeEmail || m.college_email || '').trim().toLowerCase();
         const resType = m.residenceType || m.residence_type || 'HOSTELLER';
         const hBlock = m.hostelBlock || m.hostel_block || '';
         const rNo = m.roomNo || m.room_no || '';
@@ -104,13 +172,18 @@ async function saveTeamResidenceMetadata(teamId, members = []) {
         const dsLoc = m.dayScholarLocation || m.day_scholar_location || '';
         const rAddr = m.residenceAddress || m.residence_address || '';
         const cMode = m.commuteMode || m.commute_mode || '';
+        const clgName = m.collegeName || m.college_name || '';
+        const yrStudy = m.yearOfStudy || m.year_of_study || '';
+        const deg = m.degree || '';
+        const food = (m.wantsFood || m.wants_food) ? 1 : 0;
 
         sqliteDb.prepare(`
           UPDATE team_members
           SET residence_type = ?, hostel_block = ?, room_no = ?, hostel_details = ?,
-              day_scholar_type = ?, day_scholar_location = ?, residence_address = ?, commute_mode = ?
-          WHERE UPPER(reg_number) = ?
-        `).run(resType, hBlock, rNo, hDetails, dsType, dsLoc, rAddr, cMode, reg);
+              day_scholar_type = ?, day_scholar_location = ?, residence_address = ?, commute_mode = ?,
+              college_name = ?, year_of_study = ?, degree = ?, wants_food = ?
+          WHERE (reg_number != '' AND UPPER(reg_number) = ?) OR LOWER(college_email) = ?
+        `).run(resType, hBlock, rNo, hDetails, dsType, dsLoc, rAddr, cMode, clgName, yrStudy, deg, food, reg, email);
       }
     }
   } catch (sqlErr) {
@@ -120,30 +193,27 @@ async function saveTeamResidenceMetadata(teamId, members = []) {
 
 async function getTeamResidenceMetadata(teamId) {
   if (!teamId) return {};
-  try {
-    const raw = await getSetting(`residence_team_${teamId}`, null);
-    if (raw) {
-      return JSON.parse(raw);
-    }
-  } catch (e) {}
 
-  // Check SQLite fallback
+  // 1. Check local SQLite first (instant, 0ms)
   if (sqliteDb) {
     try {
-      const rows = sqliteDb.prepare(`SELECT * FROM team_members WHERE team_id = ?`).all(teamId);
+      const rows = sqliteDb.prepare('SELECT * FROM team_members WHERE team_id = ?').all(teamId);
       if (rows && rows.length > 0) {
         const meta = {};
         for (const r of rows) {
-          if (r.reg_number) {
-            meta[r.reg_number.toUpperCase()] = {
-              residenceType: r.residence_type,
-              hostelBlock: r.hostel_block,
-              roomNo: r.room_no,
-              hostelDetails: r.hostel_details,
-              dayScholarType: r.day_scholar_type,
-              dayScholarLocation: r.day_scholar_location,
-              residenceAddress: r.residence_address,
-              commuteMode: r.commute_mode
+          const key = (r.reg_number || r.college_email || '').toUpperCase();
+          if (key) {
+            meta[key] = {
+              residenceType: r.residence_type || 'HOSTELLER',
+              hostelBlock: r.hostel_block || '',
+              roomNo: r.room_no || '',
+              dayScholarType: r.day_scholar_type || '',
+              dayScholarLocation: r.day_scholar_location || '',
+              residenceAddress: r.residence_address || '',
+              collegeName: r.college_name || '',
+              yearOfStudy: r.year_of_study || '',
+              degree: r.degree || '',
+              wantsFood: Boolean(r.wants_food)
             };
           }
         }
@@ -151,12 +221,40 @@ async function getTeamResidenceMetadata(teamId) {
       }
     } catch (e) {}
   }
+
+  // 2. Fallback to Supabase
+  try {
+    const { data: members } = await supabase.from('team_members').select('*').eq('team_id', teamId);
+    if (members && members.length > 0) {
+      const meta = {};
+      for (const m of members) {
+        const key = (m.reg_number || m.college_email || '').toUpperCase();
+        if (key) {
+          meta[key] = {
+            residenceType: m.residence_type || 'HOSTELLER',
+            hostelBlock: m.hostel_block || '',
+            roomNo: m.room_no || '',
+            dayScholarType: m.day_scholar_type || '',
+            dayScholarLocation: m.day_scholar_location || '',
+            residenceAddress: m.residence_address || '',
+            collegeName: m.college_name || '',
+            yearOfStudy: m.year_of_study || '',
+            degree: m.degree || '',
+            wantsFood: Boolean(m.wants_food)
+          };
+        }
+      }
+      return meta;
+    }
+  } catch (e) {}
+
   return {};
 }
 
 async function saveTeamReferralRecord({ teamId, teamName, registrationId, referral }) {
   if (!teamName) return;
   const cleanReferral = referral && typeof referral === 'string' && referral.trim() ? referral.trim() : null;
+  if (!cleanReferral) return;
 
   // 1. Supabase team_referrals table
   try {
@@ -173,14 +271,14 @@ async function saveTeamReferralRecord({ teamId, teamName, registrationId, referr
     console.warn('[DB] Supabase team_referrals error:', err.message);
   }
 
-  // 2. Save in app_settings fallback if referral present
-  if (teamId && cleanReferral) {
+  // 2. Set referral in teams table directly
+  if (teamId) {
     try {
-      await setSetting(`referral_team_${teamId}`, cleanReferral);
+      await supabase.from('teams').update({ referral: cleanReferral }).eq('id', teamId);
     } catch (e) {}
   }
 
-  // 3. Sync to SQLite
+  // 3. Sync to SQLite team_referrals table
   if (sqliteDb) {
     try {
       const recordId = crypto.randomUUID ? crypto.randomUUID() : `ref_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -214,13 +312,13 @@ async function getTeamReferral(teamId, teamName) {
     }
   } catch (e) {}
 
-  // 2. Check app_settings
-  if (teamId) {
-    try {
-      const val = await getSetting(`referral_team_${teamId}`, null);
-      if (val) return val;
-    } catch (e) {}
-  }
+  // 2. Check teams column
+  try {
+    if (teamId) {
+      const { data } = await supabase.from('teams').select('referral').eq('id', teamId).limit(1).maybeSingle();
+      if (data && data.referral) return data.referral;
+    }
+  } catch (e) {}
 
   // 3. Check SQLite
   if (sqliteDb) {
@@ -259,6 +357,251 @@ async function getAllTeamReferrals() {
   return [];
 }
 
+async function syncDedicatedTables(teamId) {
+  if (!teamId) return;
+  try {
+    const { data: team } = await supabase.from('teams').select('*').eq('id', teamId).maybeSingle();
+    if (!team) {
+      if (sqliteDb) {
+        sqliteDb.prepare('DELETE FROM vit_teams WHERE id = ?').run(teamId);
+        sqliteDb.prepare('DELETE FROM non_vit_teams WHERE id = ?').run(teamId);
+        sqliteDb.prepare('DELETE FROM all_participants WHERE team_id = ?').run(teamId);
+      }
+      return;
+    }
+
+    const { data: members } = await supabase.from('team_members').select('*').eq('team_id', teamId);
+    const { data: payment } = await supabase.from('payments').select('*').eq('team_id', teamId).maybeSingle();
+
+    const memList = members || [];
+    const leader = memList.find(m => m.is_leader) || memList[0] || {};
+    const paymentStatus = payment ? (payment.status || 'PENDING_PAYMENT') : 'PENDING_PAYMENT';
+    const utr = payment ? (payment.utr_number || '') : '';
+    const isVit = (team.team_type || 'VIT').toUpperCase() !== 'NON_VIT';
+
+    if (sqliteDb) {
+      if (isVit) {
+        sqliteDb.prepare('DELETE FROM non_vit_teams WHERE id = ?').run(teamId);
+        sqliteDb.prepare(`
+          INSERT INTO vit_teams (
+            id, registration_id, team_name, track, project_title, member_count, status,
+            leader_name, leader_reg_number, leader_email, leader_phone,
+            leader_residence_type, leader_hostel_block, leader_room_no, leader_day_scholar_location,
+            referral, total_fee, payment_status, utr_number, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            team_name = excluded.team_name,
+            track = excluded.track,
+            project_title = excluded.project_title,
+            member_count = excluded.member_count,
+            status = excluded.status,
+            leader_name = excluded.leader_name,
+            leader_reg_number = excluded.leader_reg_number,
+            leader_email = excluded.leader_email,
+            leader_phone = excluded.leader_phone,
+            leader_residence_type = excluded.leader_residence_type,
+            leader_hostel_block = excluded.leader_hostel_block,
+            leader_room_no = excluded.leader_room_no,
+            leader_day_scholar_location = excluded.leader_day_scholar_location,
+            referral = excluded.referral,
+            total_fee = excluded.total_fee,
+            payment_status = excluded.payment_status,
+            utr_number = excluded.utr_number,
+            updated_at = excluded.updated_at
+        `).run(
+          team.id,
+          team.registration_id,
+          team.team_name,
+          team.track || 'Open Innovation',
+          team.project_title || '',
+          team.member_count || memList.length,
+          team.status || 'PENDING_PAYMENT',
+          leader.full_name || '',
+          leader.reg_number || '',
+          leader.college_email || '',
+          leader.phone || '',
+          leader.residence_type || 'HOSTELLER',
+          leader.hostel_block || '',
+          leader.room_no || '',
+          leader.day_scholar_location || '',
+          team.referral || '',
+          team.total_fee || 250,
+          paymentStatus,
+          utr,
+          team.created_at,
+          team.updated_at || new Date().toISOString()
+        );
+      } else {
+        sqliteDb.prepare('DELETE FROM vit_teams WHERE id = ?').run(teamId);
+        sqliteDb.prepare(`
+          INSERT INTO non_vit_teams (
+            id, registration_id, team_name, track, project_title, member_count, status,
+            leader_name, leader_college_name, leader_email, leader_phone,
+            leader_year_of_study, leader_degree,
+            has_food, food_count, food_amount, total_fee,
+            referral, payment_status, utr_number, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET
+            team_name = excluded.team_name,
+            track = excluded.track,
+            project_title = excluded.project_title,
+            member_count = excluded.member_count,
+            status = excluded.status,
+            leader_name = excluded.leader_name,
+            leader_college_name = excluded.leader_college_name,
+            leader_email = excluded.leader_email,
+            leader_phone = excluded.leader_phone,
+            leader_year_of_study = excluded.leader_year_of_study,
+            leader_degree = excluded.leader_degree,
+            has_food = excluded.has_food,
+            food_count = excluded.food_count,
+            food_amount = excluded.food_amount,
+            total_fee = excluded.total_fee,
+            referral = excluded.referral,
+            payment_status = excluded.payment_status,
+            utr_number = excluded.utr_number,
+            updated_at = excluded.updated_at
+        `).run(
+          team.id,
+          team.registration_id,
+          team.team_name,
+          team.track || 'Open Innovation',
+          team.project_title || '',
+          team.member_count || memList.length,
+          team.status || 'PENDING_PAYMENT',
+          leader.full_name || '',
+          leader.college_name || 'External College',
+          leader.college_email || '',
+          leader.phone || '',
+          leader.year_of_study || '',
+          leader.degree || '',
+          team.has_food ? 1 : 0,
+          team.food_count || 0,
+          team.food_amount || 0,
+          team.total_fee || 250,
+          team.referral || '',
+          paymentStatus,
+          utr,
+          team.created_at,
+          team.updated_at || new Date().toISOString()
+        );
+      }
+
+      sqliteDb.prepare('DELETE FROM all_participants WHERE team_id = ?').run(teamId);
+      const insertPart = sqliteDb.prepare(`
+        INSERT INTO all_participants (
+          id, team_id, registration_id, team_name, category, is_leader, role,
+          full_name, college_name, reg_number, college_email, phone,
+          year_of_study, degree, residence_type, hostel_block, room_no,
+          day_scholar_location, residence_address, wants_food, payment_status, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      for (const m of memList) {
+        const isLeader = Boolean(m.is_leader);
+        insertPart.run(
+          m.id,
+          team.id,
+          team.registration_id,
+          team.team_name,
+          isVit ? 'VIT' : 'NON_VIT',
+          isLeader ? 1 : 0,
+          isLeader ? 'Leader' : 'Member',
+          m.full_name || '',
+          isVit ? 'VIT Bhopal University' : (m.college_name || 'External College'),
+          m.reg_number || '',
+          m.college_email || '',
+          m.phone || '',
+          m.year_of_study || '',
+          m.degree || '',
+          m.residence_type || (isVit ? 'HOSTELLER' : ''),
+          m.hostel_block || '',
+          m.room_no || '',
+          m.day_scholar_location || '',
+          m.residence_address || '',
+          m.wants_food ? 1 : 0,
+          paymentStatus,
+          m.created_at || team.created_at
+        );
+      }
+    }
+  } catch (err) {
+    console.warn('[DB] syncDedicatedTables notice:', err.message);
+  }
+}
+
+async function getVitTeams() {
+  try {
+    const { data, error } = await supabase.from('vit_teams').select('*').order('created_at', { ascending: false });
+    if (!error && Array.isArray(data) && data.length > 0) return data;
+  } catch(e) {}
+  if (sqliteDb) {
+    try {
+      return sqliteDb.prepare('SELECT * FROM vit_teams ORDER BY created_at DESC').all();
+    } catch(e) {}
+  }
+  const all = await getAllTeams();
+  return all.filter(t => (t.teamType || 'VIT').toUpperCase() !== 'NON_VIT');
+}
+
+async function getNonVitTeams() {
+  try {
+    const { data, error } = await supabase.from('non_vit_teams').select('*').order('created_at', { ascending: false });
+    if (!error && Array.isArray(data) && data.length > 0) return data;
+  } catch(e) {}
+  if (sqliteDb) {
+    try {
+      return sqliteDb.prepare('SELECT * FROM non_vit_teams ORDER BY created_at DESC').all();
+    } catch(e) {}
+  }
+  const all = await getAllTeams();
+  return all.filter(t => (t.teamType || '').toUpperCase() === 'NON_VIT');
+}
+
+async function getAllParticipants() {
+  try {
+    const { data, error } = await supabase.from('all_participants').select('*').order('created_at', { ascending: false });
+    if (!error && Array.isArray(data) && data.length > 0) return data;
+  } catch(e) {}
+  if (sqliteDb) {
+    try {
+      return sqliteDb.prepare('SELECT * FROM all_participants ORDER BY created_at DESC').all();
+    } catch(e) {}
+  }
+  const all = await getAllTeams();
+  const list = [];
+  for (const t of all) {
+    const isVit = (t.teamType || 'VIT').toUpperCase() !== 'NON_VIT';
+    for (const m of (t.members || [])) {
+      list.push({
+        id: m.id,
+        team_id: t.id,
+        registration_id: t.registrationId,
+        team_name: t.teamName,
+        category: isVit ? 'VIT' : 'NON_VIT',
+        is_leader: m.isLeader,
+        role: m.isLeader ? 'Leader' : 'Member',
+        full_name: m.fullName,
+        college_name: isVit ? 'VIT Bhopal University' : (m.collegeName || 'External College'),
+        reg_number: m.regNumber,
+        college_email: m.collegeEmail,
+        phone: m.phone,
+        year_of_study: m.yearOfStudy,
+        degree: m.degree,
+        residence_type: m.residenceType,
+        hostel_block: m.hostelBlock,
+        room_no: m.roomNo,
+        day_scholar_location: m.dayScholarLocation,
+        residence_address: m.residenceAddress,
+        wants_food: m.wantsFood,
+        payment_status: t.status,
+        created_at: m.createdAt || t.createdAt
+      });
+    }
+  }
+  return list;
+}
+
 function mapPayment(row) {
   if (!row) return null;
   return {
@@ -281,34 +624,48 @@ function generateRegistrationId() {
   return `CV26-TM-${randomDigits}`;
 }
 
-async function createTeam({ teamName, track, projectTitle, members, referral }) {
+async function createTeam({ teamName, track, projectTitle, members, referral, teamType = 'VIT', hasFood = false, foodCount = 0, foodAmount = 0, totalFee = 250 }) {
   if (!Array.isArray(members) || members.length < 2 || members.length > 5) throw new Error('A team must have between 2 and 5 members (1 Team Leader + 1 to 4 Members).');
   const leaderCount = members.filter(m => m.isLeader).length;
   if (leaderCount !== 1) throw new Error('Exactly one member must be designated as the Team Leader.');
   if (!members[0].isLeader) throw new Error('The Team Leader details must be entered first.');
 
+  const isNonVit = teamType === 'NON_VIT';
+
+  // Ensure regNumber exists for every member (generate unique ID for externals if not provided)
+  members.forEach((m, idx) => {
+    if (!m.regNumber || !m.regNumber.trim()) {
+      if (isNonVit) {
+        m.regNumber = `EXT-${Math.floor(100000 + Math.random() * 900000)}`;
+      }
+    }
+  });
+
   const emails = new Set();
   const regNumbers = new Set();
   for (const m of members) {
-    if (!m.fullName || !m.regNumber || !m.collegeEmail || !m.phone) throw new Error('All member fields are required.');
+    if (!m.fullName || !m.collegeEmail || !m.phone) throw new Error('All member fields are required.');
+    if (!isNonVit && !m.regNumber) throw new Error('Registration number is required.');
     const cleanEmail = m.collegeEmail.trim().toLowerCase();
-    const cleanReg = m.regNumber.trim().toUpperCase();
+    const cleanReg = (m.regNumber || '').trim().toUpperCase();
     if (emails.has(cleanEmail)) throw new Error(`Duplicate college email in team: ${m.collegeEmail}`);
-    if (regNumbers.has(cleanReg)) throw new Error(`Duplicate registration number in team: ${m.regNumber}`);
+    if (cleanReg && regNumbers.has(cleanReg)) throw new Error(`Duplicate registration number in team: ${m.regNumber}`);
     emails.add(cleanEmail);
-    regNumbers.add(cleanReg);
+    if (cleanReg) regNumbers.add(cleanReg);
   }
 
   // Cross-team check
   for (const m of members) {
     const cleanEmail = m.collegeEmail.trim().toLowerCase();
-    const cleanReg = m.regNumber.trim().toUpperCase();
+    const cleanReg = (m.regNumber || '').trim().toUpperCase();
 
     const { data: existingEmailData } = await supabase.from('team_members').select('college_email, teams(team_name, registration_id)').ilike('college_email', cleanEmail).limit(1).single();
     if (existingEmailData) throw new Error(`The email "${m.collegeEmail}" is already registered. A student can only be part of one team.`);
 
-    const { data: existingRegData } = await supabase.from('team_members').select('reg_number, teams(team_name, registration_id)').ilike('reg_number', cleanReg).limit(1).single();
-    if (existingRegData) throw new Error(`The registration number "${m.regNumber}" is already registered. A student can only be part of one team.`);
+    if (cleanReg && !cleanReg.startsWith('EXT-')) {
+      const { data: existingRegData } = await supabase.from('team_members').select('reg_number, teams(team_name, registration_id)').ilike('reg_number', cleanReg).limit(1).single();
+      if (existingRegData) throw new Error(`The registration number "${m.regNumber}" is already registered. A student can only be part of one team.`);
+    }
   }
 
   const { data: existingTeam } = await supabase.from('teams').select('id').ilike('team_name', teamName.trim()).limit(1).single();
@@ -327,9 +684,14 @@ async function createTeam({ teamName, track, projectTitle, members, referral }) 
   const fullTeamPayload = {
     registration_id: registrationId,
     team_name: teamName.trim(),
+    team_type: teamType || 'VIT',
     track: track || 'Open Innovation',
     project_title: projectTitle || '',
     referral: cleanReferral,
+    has_food: Boolean(hasFood),
+    food_count: Number(foodCount) || 0,
+    food_amount: Number(foodAmount) || 0,
+    total_fee: Number(totalFee) || 250,
     member_count: members.length,
     status: 'PENDING_PAYMENT'
   };
@@ -337,8 +699,8 @@ async function createTeam({ teamName, track, projectTitle, members, referral }) 
   const { data: teamData, error: teamError } = await supabase.from('teams').insert([fullTeamPayload]).select().single();
 
   if (teamError) {
-    // If Supabase schema does not have the referral column yet, retry base fields
-    console.warn('[DB] Teams insert with referral failed, retrying base fields:', teamError.message);
+    // If Supabase schema does not have the new columns yet, retry with base fields
+    console.warn('[DB] Teams insert with extended fields failed, retrying base fields:', teamError.message);
     const baseTeamPayload = {
       registration_id: registrationId,
       team_name: teamName.trim(),
@@ -365,7 +727,7 @@ async function createTeam({ teamName, track, projectTitle, members, referral }) 
   const fullMembersToInsert = members.map(m => ({
     team_id: team.id,
     full_name: m.fullName.trim(),
-    reg_number: m.regNumber.trim().toUpperCase(),
+    reg_number: (m.regNumber || '').trim().toUpperCase(),
     college_email: m.collegeEmail.trim().toLowerCase(),
     phone: m.phone.trim(),
     is_leader: m.isLeader,
@@ -374,17 +736,20 @@ async function createTeam({ teamName, track, projectTitle, members, referral }) 
     room_no: m.roomNo || '',
     day_scholar_type: m.dayScholarType || '',
     day_scholar_location: m.dayScholarLocation || '',
-    residence_address: m.residenceAddress || ''
+    residence_address: m.residenceAddress || '',
+    college_name: m.collegeName || '',
+    year_of_study: m.yearOfStudy || '',
+    degree: m.degree || '',
+    wants_food: Boolean(m.wantsFood)
   }));
 
   const { error: fullMembersError } = await supabase.from('team_members').insert(fullMembersToInsert);
   if (fullMembersError) {
     console.error('[DB] Full members insert failed, retrying base fields:', fullMembersError.message);
-    // If Supabase schema does not have the residence columns yet
     const baseMembersToInsert = members.map(m => ({
       team_id: team.id,
       full_name: m.fullName.trim(),
-      reg_number: m.regNumber.trim().toUpperCase(),
+      reg_number: (m.regNumber || '').trim().toUpperCase(),
       college_email: m.collegeEmail.trim().toLowerCase(),
       phone: m.phone.trim(),
       is_leader: m.isLeader
@@ -393,25 +758,41 @@ async function createTeam({ teamName, track, projectTitle, members, referral }) 
     if (baseError) throw new Error('Failed to add members: ' + baseError.message);
   }
 
-  // Always save residence metadata backup
+  // Always save residence/non-vit metadata backup
   await saveTeamResidenceMetadata(team.id, members);
 
   // Sync into local SQLite if available
   if (sqliteDb) {
     try {
       sqliteDb.prepare(`
-        INSERT OR REPLACE INTO teams (id, registration_id, team_name, track, project_title, member_count, status, referral, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(team.id, registrationId, teamName.trim(), track || 'Open Innovation', projectTitle || '', members.length, 'PENDING_PAYMENT', cleanReferral, new Date().toISOString(), new Date().toISOString());
+        INSERT OR REPLACE INTO teams (id, registration_id, team_name, team_type, track, project_title, member_count, status, referral, has_food, food_count, food_amount, total_fee, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        team.id,
+        registrationId,
+        teamName.trim(),
+        teamType || 'VIT',
+        track || 'Open Innovation',
+        projectTitle || '',
+        members.length,
+        'PENDING_PAYMENT',
+        cleanReferral,
+        hasFood ? 1 : 0,
+        Number(foodCount) || 0,
+        Number(foodAmount) || 0,
+        Number(totalFee) || 250,
+        new Date().toISOString(),
+        new Date().toISOString()
+      );
 
       for (const m of members) {
         sqliteDb.prepare(`
-          INSERT OR REPLACE INTO team_members (team_id, full_name, reg_number, college_email, phone, is_leader, residence_type, hostel_block, room_no, hostel_details, day_scholar_type, day_scholar_location, residence_address, commute_mode, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT OR REPLACE INTO team_members (team_id, full_name, reg_number, college_email, phone, is_leader, residence_type, hostel_block, room_no, hostel_details, day_scholar_type, day_scholar_location, residence_address, commute_mode, college_name, year_of_study, degree, wants_food, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
           team.id,
           m.fullName.trim(),
-          m.regNumber.trim().toUpperCase(),
+          (m.regNumber || '').trim().toUpperCase(),
           m.collegeEmail.trim().toLowerCase(),
           m.phone.trim(),
           m.isLeader ? 1 : 0,
@@ -423,6 +804,10 @@ async function createTeam({ teamName, track, projectTitle, members, referral }) 
           m.dayScholarLocation || '',
           m.residenceAddress || '',
           m.commuteMode || '',
+          m.collegeName || '',
+          m.yearOfStudy || '',
+          m.degree || '',
+          m.wantsFood ? 1 : 0,
           new Date().toISOString()
         );
       }
@@ -431,6 +816,7 @@ async function createTeam({ teamName, track, projectTitle, members, referral }) 
     }
   }
 
+  await syncDedicatedTables(team.id);
   return await getTeamByRegistrationId(registrationId);
 }
 
@@ -555,7 +941,7 @@ async function updateTeamDetails({ registrationId, teamName, track, projectTitle
     const fullMembersToInsert = members.map(m => ({
       team_id: team.id,
       full_name: m.fullName.trim(),
-      reg_number: m.regNumber.trim().toUpperCase(),
+      reg_number: (m.regNumber || '').trim().toUpperCase(),
       college_email: m.collegeEmail.trim().toLowerCase(),
       phone: m.phone.trim(),
       is_leader: m.isLeader,
@@ -564,7 +950,11 @@ async function updateTeamDetails({ registrationId, teamName, track, projectTitle
       room_no: m.roomNo || '',
       day_scholar_type: m.dayScholarType || '',
       day_scholar_location: m.dayScholarLocation || '',
-      residence_address: m.residenceAddress || ''
+      residence_address: m.residenceAddress || '',
+      college_name: m.collegeName || '',
+      year_of_study: m.yearOfStudy || '',
+      degree: m.degree || '',
+      wants_food: Boolean(m.wantsFood)
     }));
 
     const { error: fullInsertError } = await supabase.from('team_members').insert(fullMembersToInsert);
@@ -584,6 +974,7 @@ async function updateTeamDetails({ registrationId, teamName, track, projectTitle
     await supabase.from('teams').update({ member_count: members.length }).eq('id', team.id);
   }
 
+  await syncDedicatedTables(team.id);
   return await getTeamByRegistrationId(registrationId);
 }
 
@@ -599,12 +990,16 @@ async function submitPayment({ registrationId, paymentMethod, utrNumber, transac
   const { data: existingPayment } = await supabase.from('payments').select('id').eq('team_id', team.id).limit(1).maybeSingle();
   const now = new Date().toISOString();
 
+  const tiers = { 2: 250, 3: 330, 4: 400, 5: 470 };
+  const feeFallback = team.totalFee || tiers[team.memberCount] || 250;
+  const resolvedAmount = Number(amountPaid) || feeFallback;
+
   if (existingPayment) {
     const updateData = {
       payment_method: paymentMethod,
       utr_number: utrNumber.trim(),
       transaction_date: transactionDate || now.split('T')[0],
-      amount_paid: Number(amountPaid) || 400,
+      amount_paid: resolvedAmount,
       status: 'PENDING',
       admin_notes: '',
       submitted_at: now
@@ -620,7 +1015,7 @@ async function submitPayment({ registrationId, paymentMethod, utrNumber, transac
       payment_method: paymentMethod,
       utr_number: utrNumber.trim(),
       transaction_date: transactionDate || now.split('T')[0],
-      amount_paid: Number(amountPaid) || 400,
+      amount_paid: resolvedAmount,
       proof_file_path: proofFilePath || null,
       status: 'PENDING'
     }]);
@@ -630,6 +1025,7 @@ async function submitPayment({ registrationId, paymentMethod, utrNumber, transac
   const { error: teamUpdateError } = await supabase.from('teams').update({ status: 'PENDING_VERIFICATION', updated_at: now }).eq('id', team.id);
   if (teamUpdateError) throw new Error('Failed to update team status: ' + teamUpdateError.message);
 
+  await syncDedicatedTables(team.id);
   return await getTeamByRegistrationId(registrationId);
 }
 
@@ -697,6 +1093,7 @@ async function updatePaymentStatus({ registrationId, status, adminNotes = '', ve
 
   await supabase.from('teams').update({ status: teamStatus, updated_at: now }).eq('id', team.id);
 
+  await syncDedicatedTables(team.id);
   return await getTeamByRegistrationId(registrationId);
 }
 
@@ -704,10 +1101,11 @@ async function deleteTeam(registrationId) {
   const team = await getTeamByRegistrationId(registrationId);
   if (!team) throw new Error('Team not found');
   await supabase.from('teams').delete().eq('id', team.id);
+  await syncDedicatedTables(team.id);
   return true;
 }
 
-async function adminUpdateTeam({ registrationId, teamName, track, projectTitle, status, members, payment, referral }) {
+async function adminUpdateTeam({ registrationId, teamName, track, projectTitle, status, members, payment, referral, teamType, hasFood, foodCount, foodAmount, totalFee }) {
   let team = await getTeamByRegistrationId(registrationId);
   if (!team) throw new Error('Team not found');
 
@@ -725,6 +1123,11 @@ async function adminUpdateTeam({ registrationId, teamName, track, projectTitle, 
     status: status || team.status,
     updated_at: new Date().toISOString()
   };
+  if (teamType !== undefined) updateFields.team_type = teamType;
+  if (hasFood !== undefined) updateFields.has_food = Boolean(hasFood);
+  if (foodCount !== undefined) updateFields.food_count = Number(foodCount) || 0;
+  if (foodAmount !== undefined) updateFields.food_amount = Number(foodAmount) || 0;
+  if (totalFee !== undefined) updateFields.total_fee = Number(totalFee) || 250;
   if (cleanReferral !== undefined) {
     updateFields.referral = cleanReferral;
   }
@@ -752,7 +1155,7 @@ async function adminUpdateTeam({ registrationId, teamName, track, projectTitle, 
     const fullMembersToInsert = members.map(m => ({
       team_id: team.id,
       full_name: m.fullName.trim(),
-      reg_number: m.regNumber.trim().toUpperCase(),
+      reg_number: (m.regNumber || '').trim().toUpperCase(),
       college_email: m.collegeEmail.trim().toLowerCase(),
       phone: m.phone.trim(),
       is_leader: m.isLeader,
@@ -761,7 +1164,11 @@ async function adminUpdateTeam({ registrationId, teamName, track, projectTitle, 
       room_no: m.roomNo || '',
       day_scholar_type: m.dayScholarType || '',
       day_scholar_location: m.dayScholarLocation || '',
-      residence_address: m.residenceAddress || ''
+      residence_address: m.residenceAddress || '',
+      college_name: m.collegeName || '',
+      year_of_study: m.yearOfStudy || '',
+      degree: m.degree || '',
+      wants_food: Boolean(m.wantsFood)
     }));
 
     const { error: fullInsertError } = await supabase.from('team_members').insert(fullMembersToInsert);
@@ -795,6 +1202,7 @@ async function adminUpdateTeam({ registrationId, teamName, track, projectTitle, 
     }
   }
 
+  await syncDedicatedTables(team.id);
   return await getTeamByRegistrationId(registrationId);
 }
 
@@ -900,5 +1308,9 @@ module.exports = {
   isRegistrationDeadlinePassed,
   saveTeamReferralRecord,
   getTeamReferral,
-  getAllTeamReferrals
+  getAllTeamReferrals,
+  syncDedicatedTables,
+  getVitTeams,
+  getNonVitTeams,
+  getAllParticipants
 };

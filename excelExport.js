@@ -52,7 +52,10 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
     { key: 'track', header: 'Innovation Track', width: 30, align: 'left', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
     { key: 'projectTitle', header: 'Proposed Project / Problem Statement', width: 36, align: 'left', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
     { key: 'referral', header: 'Referral Code', width: 20, align: 'center', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
+    { key: 'teamType', header: 'Category (VIT / Non-VIT)', width: 22, align: 'center', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
+    { key: 'foodPass', header: 'Dinner / Food Pass', width: 24, align: 'center', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
     { key: 'memberCount', header: 'Total Members', width: 15, align: 'center', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
+    { key: 'totalFee', header: 'Registration Fee (₹)', width: 20, align: 'right', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
     { key: 'overallStatus', header: 'Registration Status', width: 24, align: 'center', category: 'TEAM INFO', catBg: COLORS.TEAM_BG },
 
     // Team Leader (Member 1)
@@ -193,6 +196,34 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
     to: { row: 3, column: totalCols }
   };
 
+  // Helper for residence formatting
+  const getMemberResidence = (m) => {
+    if (!m || !(m.fullName || m.full_name)) return { type: '—', details: '—' };
+    if (m.collegeName || m.college_name || m.yearOfStudy || m.year_of_study || m.degree) {
+      const foodTag = (m.wantsFood || m.wants_food) ? ' [🍱 Food Opted]' : '';
+      return {
+        type: `External / Non-VIT${foodTag}`,
+        details: `${m.collegeName || m.college_name || 'College N/A'} • ${m.yearOfStudy || m.year_of_study || ''} • ${m.degree || ''}`.trim()
+      };
+    }
+    const resType = m.residenceType || m.residence_type || 'HOSTELLER';
+    if (resType === 'DAY_SCHOLAR') {
+      const subType = (m.dayScholarType || m.day_scholar_type) === 'LOCAL' ? 'Local' : 'Non-Local';
+      const loc = m.dayScholarLocation || m.day_scholar_location || '';
+      const addr = m.residenceAddress || m.residence_address || '';
+      return {
+        type: `Day Scholar (${subType})`,
+        details: `${loc}${loc && addr ? ' - ' : ''}${addr}`.trim() || '—'
+      };
+    }
+    const block = m.hostelBlock || m.hostel_block || 'Hostel';
+    const room = m.roomNo || m.room_no || '—';
+    return {
+      type: 'Hosteller',
+      details: `${block}, Room: ${room}`
+    };
+  };
+
   // =========================================================================
   // ROWS 4+: Populate Data Rows
   // =========================================================================
@@ -215,31 +246,16 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
       const isEven = teamIdx % 2 === 1;
       const rowBg = isEven ? COLORS.ROW_ALT_BG : COLORS.WHITE;
 
-      const getMemberResidence = (m) => {
-        if (!m || !(m.fullName || m.full_name)) return { type: '—', details: '—' };
-        const resType = m.residenceType || m.residence_type || 'HOSTELLER';
-        if (resType === 'DAY_SCHOLAR') {
-          const subType = (m.dayScholarType || m.day_scholar_type) === 'LOCAL' ? 'Local' : 'Non-Local';
-          const loc = m.dayScholarLocation || m.day_scholar_location || '';
-          const addr = m.residenceAddress || m.residence_address || '';
-          return {
-            type: `Day Scholar (${subType})`,
-            details: `${loc}${loc && addr ? ' - ' : ''}${addr}`.trim() || '—'
-          };
-        }
-        const block = m.hostelBlock || m.hostel_block || 'Hostel';
-        const room = m.roomNo || m.room_no || '—';
-        return {
-          type: 'Hosteller',
-          details: `${block}, Room: ${room}`
-        };
-      };
-
       const leaderRes = getMemberResidence(leader);
       const m2Res = getMemberResidence(m2);
       const m3Res = getMemberResidence(m3);
       const m4Res = getMemberResidence(m4);
       const m5Res = getMemberResidence(m5);
+
+      const isNonVitTeam = (team.teamType || team.team_type) === 'NON_VIT';
+      const hasFoodPass = team.hasFood || team.has_food;
+      const foodCount = team.foodCount || team.food_count || 0;
+      const foodAmt = team.foodAmount || team.food_amount || 0;
 
       const rowData = {
         sno: teamIdx + 1,
@@ -248,7 +264,10 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
         track: team.track || '—',
         projectTitle: team.projectTitle || team.project_title || '—',
         referral: team.referral || '—',
+        teamType: isNonVitTeam ? 'Non-VIT / External' : 'VIT Student',
+        foodPass: hasFoodPass ? `Yes (${foodCount} pass${foodCount > 1 ? 'es' : ''} - ₹${foodAmt})` : 'No Food',
         memberCount: team.memberCount || team.member_count || members.length,
+        totalFee: team.totalFee || team.total_fee || (payment.amountPaid || 250),
         overallStatus: formatStatus(team.status),
 
         // Leader
@@ -360,7 +379,98 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
   }
 
   // =========================================================================
-  // SHEET 2: Hackathon Overview & Statistics
+  // SHEET 2: Master All Participants Directory
+  // =========================================================================
+  const partSheet = workbook.addWorksheet('All Participants', {
+    views: [{ state: 'frozen', ySplit: 2, xSplit: 2, activeCell: 'C3' }],
+    pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1 }
+  });
+
+  const partCols = [
+    { key: 'sno', header: 'S.No', width: 8, align: 'center' },
+    { key: 'category', header: 'Category', width: 14, align: 'center' },
+    { key: 'role', header: 'Role', width: 15, align: 'center' },
+    { key: 'fullName', header: 'Full Name', width: 28, align: 'left' },
+    { key: 'collegeName', header: 'College / University', width: 32, align: 'left' },
+    { key: 'regNumber', header: 'Reg / Roll No', width: 20, align: 'center' },
+    { key: 'collegeEmail', header: 'Email Address', width: 32, align: 'left' },
+    { key: 'phone', header: 'Phone / WhatsApp', width: 20, align: 'center' },
+    { key: 'yearDegree', header: 'Year & Degree', width: 24, align: 'left' },
+    { key: 'residence', header: 'Residence / Hostel Details', width: 32, align: 'left' },
+    { key: 'foodPass', header: 'Dinner Pass', width: 16, align: 'center' },
+    { key: 'teamName', header: 'Team Name', width: 28, align: 'left' },
+    { key: 'registrationId', header: 'Registration ID', width: 20, align: 'center' },
+    { key: 'paymentStatus', header: 'Payment Status', width: 22, align: 'center' }
+  ];
+
+  partSheet.columns = partCols.map(c => ({ key: c.key, width: c.width }));
+
+  // Title Banner
+  partSheet.mergeCells(1, 1, 1, partCols.length);
+  const partBanner = partSheet.getCell(1, 1);
+  partBanner.value = 'CODEVERSE 2.0 HACKATHON — MASTER PARTICIPANTS DIRECTORY';
+  partBanner.font = { name: 'Calibri', size: 13, bold: true, color: { argb: COLORS.WHITE } };
+  partBanner.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.TITLE_BG } };
+  partBanner.alignment = { vertical: 'middle', horizontal: 'center' };
+  partSheet.getRow(1).height = 32;
+
+  // Header Row
+  const partHeaderRow = partSheet.getRow(2);
+  partHeaderRow.height = 26;
+  partCols.forEach((col, idx) => {
+    const cell = partHeaderRow.getCell(idx + 1);
+    cell.value = col.header;
+    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: COLORS.WHITE } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.MEMBER_BG } };
+    cell.alignment = { vertical: 'middle', horizontal: col.align || 'left' };
+    cell.border = {
+      top: { style: 'medium', color: { argb: COLORS.TITLE_BG } },
+      bottom: { style: 'medium', color: { argb: COLORS.TITLE_BG } },
+      left: { style: 'thin', color: { argb: COLORS.BORDER_GRAY } },
+      right: { style: 'thin', color: { argb: COLORS.BORDER_GRAY } }
+    };
+  });
+
+  // Populate Participants
+  let partIdx = 1;
+  for (const team of teams) {
+    const isVit = (team.teamType || team.team_type || 'VIT').toUpperCase() !== 'NON_VIT';
+    const members = team.members || [];
+    for (const m of members) {
+      const res = getMemberResidence(m);
+      const row = partSheet.addRow({
+        sno: partIdx++,
+        category: isVit ? 'VIT' : 'NON-VIT',
+        role: m.isLeader ? 'Team Leader' : 'Member',
+        fullName: m.fullName || m.full_name || '—',
+        collegeName: isVit ? 'VIT Bhopal University' : (m.collegeName || m.college_name || 'External College'),
+        regNumber: m.regNumber || m.reg_number || '—',
+        collegeEmail: m.collegeEmail || m.college_email || '—',
+        phone: m.phone || '—',
+        yearDegree: `${m.yearOfStudy || m.year_of_study || ''} ${m.degree ? '• ' + m.degree : ''}`.trim() || '—',
+        residence: `${res.type}: ${res.details}`,
+        foodPass: (m.wantsFood || m.wants_food) ? 'Included (+₹200)' : 'No Food',
+        teamName: team.teamName || team.team_name || '—',
+        registrationId: team.registrationId || team.registration_id || '—',
+        paymentStatus: formatStatus(team.status)
+      });
+      row.height = 20;
+      row.eachCell((cell, colNum) => {
+        const align = partCols[colNum - 1]?.align || 'left';
+        cell.alignment = { vertical: 'middle', horizontal: align };
+        cell.font = { name: 'Calibri', size: 10 };
+        cell.border = {
+          top: { style: 'thin', color: { argb: COLORS.BORDER_GRAY } },
+          bottom: { style: 'thin', color: { argb: COLORS.BORDER_GRAY } },
+          left: { style: 'thin', color: { argb: COLORS.BORDER_GRAY } },
+          right: { style: 'thin', color: { argb: COLORS.BORDER_GRAY } }
+        };
+      });
+    }
+  }
+
+  // =========================================================================
+  // SHEET 3: Hackathon Overview & Statistics
   // =========================================================================
   const statsSheet = workbook.addWorksheet('Summary & Statistics');
   statsSheet.columns = [

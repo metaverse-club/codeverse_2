@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Non-VIT Registration | CodeVerse 2.0</title>
+  <meta name="description"
+    content="Register your team for CodeVerse 2.0 as an external / Non-VIT participant. Direct entry to Round 2 offline hackathon at VIT Bhopal! Dynamic cart with optional dinner pass.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="icon" type="image/png" href="codeverse_logo.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="print.css">
+  <!-- Cloudflare Turnstile Bot Protection API -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback&render=explicit"
+    async defer></script>
+</head>
+
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="ambient-glow glow-1" aria-hidden="true"></div>
+  <div class="ambient-glow glow-2" aria-hidden="true"></div>
+
+  <!-- Live Marquee Ticker -->
+  <div class="live-ticker-banner" aria-label="Hackathon Updates Ticker">
+    <div class="ticker-scroll">
+      <div class="ticker-content">
+        <span class="ticker-badge"><span class="pulse-dot"></span> NON-VIT REGISTRATION</span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">ENTRY: <strong>DIRECT TO ROUND 2 OFFLINE HACKATHON</strong> (ROUND 1 BYPASSED)</span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">SQUAD SIZE: <strong>2–5 MEMBERS</strong></span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">BASE SQUAD PASS: <strong>DUO ₹250 • TRIO ₹330 • QUARTET ₹400 • QUINTET ₹470</strong></span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">OPTIONAL DINNER PASS: <strong>₹200 / PERSON (CART SELECTION)</strong></span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">VENUE: <strong>VIT BHOPAL UNIVERSITY CAMPUS</strong></span>
+        <span class="ticker-sep">•</span>
+      </div>
+      <div class="ticker-content" aria-hidden="true">
+        <span class="ticker-badge"><span class="pulse-dot"></span> NON-VIT REGISTRATION</span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">ENTRY: <strong>DIRECT TO ROUND 2 OFFLINE HACKATHON</strong> (ROUND 1 BYPASSED)</span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">SQUAD SIZE: <strong>2–5 MEMBERS</strong></span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">BASE SQUAD PASS: <strong>DUO ₹250 • TRIO ₹330 • QUARTET ₹400 • QUINTET ₹470</strong></span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">OPTIONAL DINNER PASS: <strong>₹200 / PERSON (CART SELECTION)</strong></span>
+        <span class="ticker-sep">•</span>
+        <span class="ticker-text">VENUE: <strong>VIT BHOPAL UNIVERSITY CAMPUS</strong></span>
+        <span class="ticker-sep">•</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar" id="main-nav">
+    <div class="nav-container">
+      <a href="index.html" class="nav-brand">
+        <div class="brand-logo-badge">
+          <img src="codeverse_logo.png" alt="CodeVerse 2.0" class="brand-logo-img">
+        </div>
+        <div class="brand-text-block">
+          <span class="brand-title">Code<span class="gradient-text">Verse</span></span>
+          <span class="brand-sub">2.0</span>
+        </div>
+      </a>
+
+      <div class="nav-actions-right">
+        <a href="index.html" class="nav-btn" title="Return to Hackathon Overview">
+          <span class="nav-btn-icon">🏠</span>
+          <span class="nav-btn-label">Home</span>
+        </a>
+        <a href="register.html" class="nav-btn" style="border-color: rgba(139, 92, 246, 0.4); background: rgba(139, 92, 246, 0.1);" title="Switch to Registration for VIT Students">
+          <span class="nav-btn-icon">🎓</span>
+          <span class="nav-btn-label">VIT Registration</span>
+        </a>
+        <button type="button" class="nav-btn nav-btn-track" id="nav-track-btn"
+          title="Track Squad Verification & Payment Status">
+          <span class="nav-btn-icon">🔍</span>
+          <span class="nav-btn-label">Track Status</span>
+        </button>
+        <button type="button" class="nav-btn nav-btn-resume" id="nav-resume-btn"
+          title="Continue an incomplete registration">
+          <span class="nav-btn-icon">⚡</span>
+          <span class="nav-btn-label">Continue Reg.</span>
+        </button>
+        <a href="index.html#contact" class="nav-btn nav-btn-contact" title="Support">
+          <span class="nav-btn-icon">📞</span>
+          <span class="nav-btn-label">Contact</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Deadline Closed Banner -->
+  <div id="reg-deadline-closed-banner" class="container deadline-expired-card" style="display: none; margin-top: 2rem;">
+    <div class="expired-icon">🔒</div>
+    <div class="expired-info">
+      <strong class="expired-title" style="font-size: 1.25rem;">Registrations Are Currently Closed</strong>
+      <p class="expired-desc" id="reg-closed-message">
+        The deadline for submitting new team registrations has passed. No further entries can be accepted at this time.
+      </p>
+    </div>
+  </div>
+
+  <!-- Persistent Incomplete Registration Alert Banner -->
+  <div id="pending-reg-banner" class="pending-reg-banner" style="display: none;">
+    <div class="container pending-banner-container">
+      <div class="pending-banner-left">
+        <span class="pending-banner-badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 4px 8px; border-radius: 4px; font-weight: 700; font-size: 0.8rem; margin-right: 8px;">⚡ PENDING PAYMENT</span>
+        <span class="pending-banner-text">
+          Incomplete registration found for squad <strong id="pending-banner-team-name">Squad</strong>
+          (<code id="pending-banner-reg-id" class="monospace">CV26-TM-XXXX</code>). Your squad credentials are confirmed!
+        </span>
+      </div>
+      <div class="pending-banner-actions">
+        <button type="button" class="btn btn-sm btn-primary" id="btn-banner-resume">
+          Continue Registration →
+        </button>
+        <button type="button" class="btn btn-sm btn-ghost" id="btn-banner-dismiss">
+          ✕
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= INSTRUCTIONS GATE ================= -->
+  <section class="instructions-gate-section" id="instructions-gate">
+    <div class="container">
+      <div class="card wizard-card">
+        <div class="step-header">
+          <div class="step-badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">Non-VIT Participant Guidelines</div>
+          <h2 class="step-title">Non-VIT Registration Guidelines & Instructions</h2>
+          <p class="step-desc">Please read all instructions and policies carefully before proceeding to the registration form.</p>
+        </div>
+
+        <div class="form-grid" style="grid-template-columns: 1fr;">
+          <div class="input-group">
+            <ul style="color: var(--text-muted); line-height: 1.85; margin-left: 20px; font-size: 0.95rem;">
+              <li style="margin-bottom: 12px;">
+                <strong style="color: #38bdf8;">⚡ Direct Entry to Round 2 (Offline Hackathon):</strong> External squads from all recognized colleges and universities are exempt from Round 1 (Online Vibecoding) and qualify directly for the <strong>36-Hour Offline Flagship Hackathon</strong> on <strong>March 27–28, 2026</strong> at VIT Bhopal University.
+              </li>
+              <li style="margin-bottom: 12px;">
+                <strong>Team Composition:</strong> Each squad must consist of <strong>2 to 5 members</strong> — 1 Team Leader + 1 to 4 Members (Duo, Trio, Quartet, or Quintet). The Team Leader will serve as the primary squad administrator.
+              </li>
+              <li style="margin-bottom: 12px;">
+                <strong>Tiered Base Registration Pass:</strong> Fees are based on squad size:<br>
+                • <strong>DUO (2 Members):</strong> ₹250 / squad<br>
+                • <strong>TRIO (3 Members):</strong> ₹330 / squad<br>
+                • <strong>QUARTET (4 Members):</strong> ₹400 / squad<br>
+                • <strong>QUINTET (5 Members):</strong> ₹470 / squad
+              </li>
+              <li style="margin-bottom: 12px;">
+                <strong style="color: #f59e0b;">🍽️ Optional Dinner Pass (₹200 / person):</strong> Day 1 dinner at the campus venue is completely optional. You can choose dinner passes for individual squad members or for all members inside the interactive cart.
+              </li>
+              <li style="margin-bottom: 12px;">
+                <strong>Campus ID Verification:</strong> Every member must carry a valid <strong>College ID Card</strong> or bonafide student verification when reporting to VIT Bhopal University on March 27, 2026.
+              </li>
+              <li style="margin-bottom: 12px;">
+                <strong>Payment & Verification:</strong> Pay securely using the dynamic UPI QR code or bank transfer. Keep your 12-digit UTR/Transaction Reference ID ready to submit alongside payment proof.
+              </li>
+              <li style="margin-bottom: 12px;">
+                <strong>Non-Refundable Policy & Ethics:</strong> Registration fees are non-refundable once paid. Teams must follow the hackathon code of conduct and academic integrity.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+          <label class="custom-checkbox-label" for="instructions-agree-check" style="cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 500;">
+            <input type="checkbox" id="instructions-agree-check" class="custom-checkbox">
+            <span>I have read and understood all the guidelines, rules, and fee policies above. I agree to abide by them.</span>
+          </label>
+
+          <button type="button" class="btn btn-primary btn-glow" id="proceed-to-register-btn" disabled style="opacity: 0.5; cursor: not-allowed; transition: all 0.3s ease;">
+            <span class="btn-text">Proceed to Registration Form</span>
+            <span class="btn-arrow">→</span>
+          </button>
+
+          <div class="resume-reg-prompt" style="margin-top: 10px; text-align: center;">
+            <span style="color: var(--text-muted); font-size: 0.9rem;">Already confirmed your squad details and paused before payment?</span>
+            <button type="button" class="btn-link-action" id="btn-open-resume-modal" style="margin-left: 8px; color: #38bdf8; background: none; border: none; cursor: pointer; text-decoration: underline; font-weight: 600; font-size: 0.95rem;">
+              Continue Registration / Pay Later →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Multi-step Registration Wizard -->
+  <main class="container main-content" id="register-wizard-container" style="display: none;">
+    
+    <!-- Non-VIT Direct Entry Highlight Banner -->
+    <div class="non-vit-hero-banner">
+      <div class="non-vit-hero-icon">🌐</div>
+      <div class="non-vit-hero-text">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap;">
+          <h3 style="margin: 0;">Registration for Non-VIT Students</h3>
+          <span class="direct-entry-pill">⚡ Direct Entry to Round 2</span>
+        </div>
+        <p>
+          Welcome external squads! <strong>Round 1 (Online Vibecoding) is waived for all Non-VIT teams.</strong> You qualify directly for the <strong>Round 2 36-Hour Offline Hackathon</strong> (March 27–28, 2026) at the VIT Bhopal University Campus.
+        </p>
+      </div>
+    </div>
+
+    <!-- Wizard Step Indicator -->
+    <div class="stepper-wrapper">
+      <ol class="stepper-list" id="stepper">
+        <li class="step-item active" data-step="1">
+          <div class="step-circle">1</div>
+          <span class="step-name">Leader & Squad</span>
+        </li>
+        <li class="step-line"></li>
+        <li class="step-item" data-step="2">
+          <div class="step-circle">2</div>
+          <span class="step-name">Roster (2–5)</span>
+        </li>
+        <li class="step-line"></li>
+        <li class="step-item" data-step="3">
+          <div class="step-circle">3</div>
+          <span class="step-name">Cart & Review</span>
+        </li>
+        <li class="step-line"></li>
+        <li class="step-item" data-step="4">
+          <div class="step-circle">4</div>
+          <span class="step-name">Payment</span>
+        </li>
+        <li class="step-line"></li>
+        <li class="step-item" data-step="5">
+          <div class="step-circle">5</div>
+          <span class="step-name">Submit UTR</span>
+        </li>
+        <li class="step-line"></li>
+        <li class="step-item" data-step="6">
+          <div class="step-circle">6</div>
+          <span class="step-name">Receipt</span>
+        </li>
+      </ol>
+    </div>
+
+    <!-- Multi-step Form Card -->
+    <div class="card wizard-card">
+
+      <!-- ================= STEP 1: SQUAD PROFILE & LEADER ================= -->
+      <section class="wizard-step active" id="step-1">
+        <div class="step-header">
+          <div class="step-badge">Step 1 of 5</div>
+          <h2 class="step-title">Squad Profile & Team Leader Details</h2>
+          <p class="step-desc">Enter your squad details and project focus. As external participants, your squad gets direct entry to Round 2!</p>
+        </div>
+
+        <form id="form-step-1" novalidate>
+          <div class="form-section-title">
+            <span class="section-icon">🛡️</span> Squad Profile
+          </div>
+
+          <div class="form-group">
+            <label for="team-name" class="form-label">
+              Squad / Team Name <span class="required">*</span>
+            </label>
+            <input type="text" id="team-name" class="form-input" placeholder="e.g. CyberVanguard Labs" required
+              autocomplete="off">
+            <span class="input-hint">Must be unique across all hackathon squads.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="referral" class="form-label">
+              Referral Code <span class="optional-pill" style="font-weight: 500; font-size: 0.85rem; color: var(--text-muted);">(Optional)</span>
+            </label>
+            <input type="text" id="referral" class="form-input" placeholder="e.g. AMBASSADOR2026 or REF-CODE"
+              autocomplete="off">
+            <span class="input-hint">Optional: Enter referral code if referred by a campus ambassador, club, or partner.</span>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="team-track" class="form-label">
+                Innovation Track <span class="required">*</span>
+              </label>
+              <select id="team-track" class="form-input form-select" required>
+                <option value="AI & Intelligent Systems">🤖 AI & Intelligent Systems</option>
+                <option value="Web3 & Decentralized Technologies">⛓️ Web3 & Decentralized Technologies</option>
+                <option value="Fintech & Smart Commerce">💳 Fintech & Smart Commerce</option>
+                <option value="Healthcare & MedTech">🩺 Healthcare & MedTech</option>
+                <option value="Smart Automation & IoT">⚡ Smart Automation & IoT</option>
+                <option value="Open Innovation & Social Impact">🚀 Open Innovation & Social Impact</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="project-title" class="form-label">
+                Project Title / Idea Scope <span class="required">*</span>
+              </label>
+              <input type="text" id="project-title" class="form-input" placeholder="e.g. AI-driven Decentralized Identity" required>
+            </div>
+          </div>
+
+          <!-- Team Leader Details Box -->
+          <div class="leader-card">
+            <div class="leader-card-header">
+              <div class="leader-badge-pill">
+                <span class="crown-icon">👑</span> Team Leader (Member 1)
+              </div>
+              <span class="leader-tagline">Primary Communicator & Squad Administrator</span>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label for="leader-name" class="form-label">
+                  Full Name <span class="required">*</span>
+                </label>
+                <input type="text" id="leader-name" class="form-input" placeholder="e.g. Rohan Verma" required
+                  autocomplete="name">
+              </div>
+
+              <div class="form-group">
+                <label for="leader-college" class="form-label">
+                  College / University Name <span class="required">*</span>
+                </label>
+                <input type="text" id="leader-college" class="form-input" placeholder="e.g. IIT Delhi / DTU / LNCT Bhopal" required>
+              </div>
+
+              <div class="form-group">
+                <label for="leader-year" class="form-label">
+                  Year of Study <span class="required">*</span>
+                </label>
+                <select id="leader-year" class="form-input form-select" required>
+                  <option value="1st Year">1st Year</option>
+                  <option value="2nd Year" selected>2nd Year</option>
+                  <option value="3rd Year">3rd Year</option>
+                  <option value="4th Year">4th Year</option>
+                  <option value="5th Year">5th Year</option>
+                  <option value="Postgraduate">Postgraduate</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="leader-degree" class="form-label">
+                  Degree & Branch <span class="required">*</span>
+                </label>
+                <input type="text" id="leader-degree" class="form-input" placeholder="e.g. B.Tech Computer Science / BCA" required>
+              </div>
+
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label for="leader-phone" class="form-label">
+                  WhatsApp / Phone Number <span class="required">*</span>
+                </label>
+                <input type="tel" id="leader-phone" class="form-input" placeholder="e.g. 9876543210" required
+                  autocomplete="tel" maxlength="15">
+                <span class="input-hint">10-digit mobile number for hackathon alerts.</span>
+              </div>
+            </div>
+
+            <!-- Email & Anti-Bot Verification Section -->
+            <div class="leader-verification-card">
+              <div class="form-group mb-0">
+                <label for="leader-email" class="form-label">
+                  College / Personal Email <span class="required">*</span>
+                </label>
+                <div style="display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap;">
+                  <input type="email" id="leader-email" class="form-input" placeholder="e.g. rohan.verma@college.edu"
+                    required autocomplete="email" style="flex: 1; min-width: 220px;">
+                  <button type="button" class="btn btn-secondary" id="btn-send-otp"
+                    style="padding: 0 20px; white-space: nowrap; font-weight: 600;">Send OTP</button>
+                </div>
+                <span class="input-hint" id="otp-hint">Official updates & receipt will be sent here. Email verification required.</span>
+
+                <!-- Cloudflare Turnstile Bot Protection Widget -->
+                <div id="turnstile-wrapper">
+                  <div class="turnstile-label">
+                    <span>🛡️</span> Bot & Security Verification
+                  </div>
+                  <div id="cf-turnstile-container"></div>
+                  <input type="hidden" id="turnstile-token" name="turnstile-token">
+                </div>
+
+                <!-- OTP Verification Section -->
+                <div id="otp-section"
+                  style="display: none; margin-top: 15px; padding: 15px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px;">
+                  <label for="leader-otp" class="form-label" style="font-size: 0.9rem;">
+                    Enter 6-digit OTP sent to email <span class="required">*</span>
+                  </label>
+                  <div style="display: flex; gap: 10px;">
+                    <input type="text" id="leader-otp" class="form-input" placeholder="123456" maxlength="6"
+                      style="flex: 1; letter-spacing: 2px; font-weight: bold; text-align: center;">
+                    <button type="button" class="btn btn-primary" id="btn-verify-otp"
+                      style="padding: 0 18px;">Verify</button>
+                  </div>
+                  <span class="input-hint" id="otp-status-msg"
+                    style="margin-top: 8px; display: block; color: var(--accent-1);"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Optional Dinner Pass Checkbox for Leader -->
+            <label class="member-food-checkbox-wrap" for="leader-food-pass">
+              <input type="checkbox" id="leader-food-pass">
+              <span class="member-food-label">
+                🍽️ Include Day 1 Dinner Pass for Leader
+                <span class="member-food-price-pill">+₹200</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <div></div>
+            <button type="button" class="btn btn-primary btn-next" id="btn-goto-step-2">
+              Next: Add Members (2–5) <span class="btn-arrow">→</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ================= STEP 2: MEMBERS (2-5) ================= -->
+      <section class="wizard-step" id="step-2">
+        <div class="step-header">
+          <div class="step-badge">Step 2 of 5</div>
+          <h2 class="step-title">Add Squad Members</h2>
+          <p class="step-desc">
+            Squad size: <strong>2 to 5 members</strong> (1 Team Leader + 1 to 4 Members). Base tiers:
+            <strong>DUO (2): ₹250</strong> • <strong>TRIO (3): ₹330</strong> • <strong>QUARTET (4): ₹400</strong> •
+            <strong>QUINTET (5): ₹470</strong>. Optional dinner pass can be selected per person.
+          </p>
+        </div>
+
+        <!-- Dynamic Counter Card -->
+        <div class="member-counter-bar">
+          <div class="counter-left">
+            <span class="counter-title">Squad Composition</span>
+            <span class="counter-sub">Team Leader + <span id="additional-members-count">1</span> Member(s)</span>
+          </div>
+          <div class="counter-right">
+            <div class="badge-status" id="member-count-badge">
+              <span id="total-members-count">2</span> / 5 Members
+            </div>
+            <span class="counter-rule" id="member-rule-hint">DUO Tier (2 members) • Base Fee: ₹250</span>
+          </div>
+        </div>
+
+        <!-- Readonly Leader Preview -->
+        <div class="member-card readonly-leader">
+          <div class="member-card-top">
+            <div class="member-title-wrapper">
+              <span class="member-idx">Member 1</span>
+              <span class="badge-leader">👑 Team Leader</span>
+            </div>
+            <span class="member-status-text" id="leader-preview-name">-</span>
+          </div>
+          <div class="member-summary-inline">
+            <span id="leader-preview-college">College: -</span> •
+            <span id="leader-preview-email">Email: -</span> •
+            <span id="leader-preview-phone">Phone: -</span> •
+            <span id="leader-preview-food">Dinner: No</span>
+          </div>
+        </div>
+
+        <!-- Dynamic Members Container -->
+        <div id="dynamic-members-container" class="dynamic-members-list">
+          <!-- Member cards will be rendered dynamically by JavaScript -->
+        </div>
+
+        <!-- Add Member Action Bar (supports 2 to 5 members) -->
+        <div class="add-member-zone" id="add-member-zone">
+          <button type="button" class="btn btn-outline" id="btn-add-member">
+            <span class="btn-plus">+</span> Add Squad Member (<span id="slots-remaining">3</span> slots left)
+          </button>
+          <p class="add-member-note">Squads can have 2 to 5 members. Fees adjust dynamically per tier in your cart.</p>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary btn-back" id="btn-back-to-step-1">
+            <span class="btn-arrow">←</span> Back to Squad Info
+          </button>
+          <button type="button" class="btn btn-primary btn-next" id="btn-goto-step-3">
+            Review Cart & Roster <span class="btn-arrow">→</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ================= STEP 3: INTERACTIVE CART & REVIEW ================= -->
+      <section class="wizard-step" id="step-3">
+        <div class="step-header">
+          <div class="step-badge">Step 3 of 5</div>
+          <h2 class="step-title">Interactive Cart & Squad Review</h2>
+          <p class="step-desc">Review your registration cart and squad roster. Customize food passes to adjust your total dynamically.</p>
+        </div>
+
+        <!-- Interactive Cart Box -->
+        <div class="cart-card-wrap">
+          <div class="cart-header">
+            <div class="cart-title">
+              <span>🛒</span> Registration Cart Breakdown
+            </div>
+            <span class="direct-entry-pill">Non-VIT Direct Pass</span>
+          </div>
+
+          <div class="cart-items-list">
+            <!-- Base Registration Item -->
+            <div class="cart-item-row">
+              <div class="cart-item-left">
+                <span class="cart-item-name">CodeVerse 2.0 Base Registration (<span id="cart-tier-name">DUO</span>)</span>
+                <span class="cart-item-desc" id="cart-tier-desc">Squad Pass for 2 members • Direct Entry to Round 2 Offline Hackathon</span>
+              </div>
+              <div class="cart-item-price" id="cart-base-fee">₹250</div>
+            </div>
+
+            <!-- Food Addon Item -->
+            <div class="cart-item-row" id="cart-food-row">
+              <div class="cart-item-left">
+                <span class="cart-item-name">🍽️ Day 1 Overnight Dinner Pass</span>
+                <span class="cart-item-desc" id="cart-food-desc">0 passes selected @ ₹200 per person</span>
+              </div>
+              <div class="cart-item-price" id="cart-food-amount" style="color: #fbbf24;">₹0</div>
+            </div>
+          </div>
+
+          <!-- Quick Food Controls -->
+          <div class="cart-food-controls">
+            <div class="cart-food-info">
+              <span class="cart-food-icon">🍱</span>
+              <div>
+                <div class="cart-food-title">Dinner Pass Option (₹200/person)</div>
+                <div class="cart-food-sub">Nutritious dinner served at VIT Bhopal for Day 1 overnight coding sprint.</div>
+              </div>
+            </div>
+            <div class="food-toggle-btn-group">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-cart-add-all-food">
+                + Add For All (<span id="cart-all-food-count">2</span>)
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-cart-remove-all-food">
+                Remove All
+              </button>
+            </div>
+          </div>
+
+          <!-- Total Calculation Banner -->
+          <div class="cart-total-box">
+            <div class="cart-total-label-wrap">
+              <span class="cart-total-label">Total Payable Amount</span>
+              <span class="cart-total-sub" id="cart-total-breakdown">Base Registration (₹250) + Food Passes (₹0)</span>
+            </div>
+            <div class="cart-total-amount" id="cart-total-amount">₹250</div>
+          </div>
+        </div>
+
+        <!-- Review Summary -->
+        <div class="review-box">
+          <div class="review-header-row">
+            <div>
+              <span class="review-label">Squad Name</span>
+              <h3 class="review-team-name" id="review-team-name">-</h3>
+            </div>
+            <div>
+              <span class="review-label">Referral Code</span>
+              <div class="badge-track" id="review-team-referral" style="background: rgba(99, 102, 241, 0.12); color: #818cf8; border-color: rgba(99, 102, 241, 0.3);">None</div>
+            </div>
+            <div>
+              <span class="review-label">Category</span>
+              <div class="badge-track badge-non-vit" style="display: inline-block;">🌐 Non-VIT (Direct Entry)</div>
+            </div>
+            <div class="text-right">
+              <span class="review-label">Track Selection</span>
+              <div class="badge-track" id="review-team-track">-</div>
+            </div>
+          </div>
+
+          <!-- Roster Review Table -->
+          <div class="roster-review-wrapper">
+            <h4 class="roster-heading">Squad Roster (<span id="review-roster-count">2</span> Members)</h4>
+            <div class="table-responsive">
+              <table class="roster-table">
+                <thead>
+                  <tr>
+                    <th>Role</th>
+                    <th>Full Name</th>
+                    <th>College / University</th>
+                    <th>Year & Degree</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Dinner Pass</th>
+                  </tr>
+                </thead>
+                <tbody id="review-roster-tbody">
+                  <!-- Injected via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="declaration-box">
+            <label class="checkbox-container">
+              <input type="checkbox" id="review-confirm-checkbox" required>
+              <span class="checkmark"></span>
+              <span class="checkbox-label">
+                I hereby declare that all team members are bona fide college students and the information provided is authentic.
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary btn-back" id="btn-back-to-step-2">
+            <span class="btn-arrow">←</span> Edit Roster
+          </button>
+          <button type="button" class="btn btn-primary btn-next" id="btn-confirm-and-pay" disabled>
+            Proceed to Payment <span class="btn-arrow">→</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ================= STEP 4: PAYMENT INSTRUCTIONS ================= -->
+      <section class="wizard-step" id="step-4">
+        <div class="step-header">
+          <div class="step-badge">Step 4 of 5</div>
+          <h2 class="step-title">Payment Instructions</h2>
+          <p class="step-desc">
+            Registration ID reserved: <strong class="text-accent"
+              id="payment-reg-id-display">Generating...</strong>. Transfer the exact cart fee using either <strong>UPI</strong> or
+            <strong>Bank Transfer</strong>.
+          </p>
+        </div>
+
+        <!-- Security Banner -->
+        <div class="security-banner">
+          <div class="security-icon">🛡️</div>
+          <div class="security-text">
+            <strong>Security Notice:</strong> CodeVerse will <u>NEVER</u> ask for your UPI PIN, OTP, or passwords. Transfer directly using your verified banking app, then submit your transaction UTR and screenshot on the next screen.
+          </div>
+        </div>
+
+        <!-- Payment Tabs -->
+        <div class="payment-tabs-nav">
+          <button type="button" class="payment-tab active" data-tab="upi" id="tab-btn-upi">
+            <span class="tab-icon">📱</span> UPI (GPay / PhonePe / Paytm / BHIM)
+          </button>
+          <button type="button" class="payment-tab" data-tab="bank" id="tab-btn-bank">
+            <span class="tab-icon">🏦</span> Bank Transfer (NEFT / IMPS / RTGS)
+          </button>
+        </div>
+
+        <!-- Tab 1: UPI -->
+        <div class="payment-tab-content active" id="tab-content-upi">
+          <div class="payment-grid">
+            <div class="qr-card">
+              <div class="qr-container">
+                <img id="upi-qr-image" src="" alt="Scan UPI QR Code for CodeVerse Hackathon Registration"
+                  class="qr-image">
+                <div class="qr-spinner" id="qr-loading">Loading QR Code...</div>
+              </div>
+              <div class="qr-meta">
+                <span class="qr-badge">⚡ Instant Scan & Pay</span>
+                <span class="qr-hint">Scan with GPay, PhonePe, Paytm, or BHIM</span>
+                <div class="qr-amount-pill">Payable: <strong id="upi-amount-pill">₹250</strong></div>
+              </div>
+            </div>
+
+            <div class="payment-info-card">
+              <h3 class="payment-info-title">UPI Payment Details</h3>
+
+              <div class="copy-field-group">
+                <label class="copy-label">UPI ID / VPA</label>
+                <div class="copy-box">
+                  <span class="copy-text monospace" id="upi-id-text">metaversevitb@indianbk</span>
+                  <button type="button" class="btn-copy" data-copy-target="upi-id-text" title="Copy UPI ID">
+                    <span class="copy-icon">📋</span> Copy
+                  </button>
+                </div>
+              </div>
+
+              <div class="copy-field-group">
+                <label class="copy-label">Payee Name</label>
+                <div class="copy-box">
+                  <span class="copy-text" id="upi-name-text">Metaversity Club</span>
+                  <button type="button" class="btn-copy" data-copy-target="upi-name-text" title="Copy Payee Name">
+                    <span class="copy-icon">📋</span> Copy
+                  </button>
+                </div>
+              </div>
+
+              <div class="copy-field-group">
+                <label class="copy-label">Cart Payable Amount</label>
+                <div class="copy-box highlight-box">
+                  <span class="copy-text amount-highlight" id="upi-fee-text">₹250</span>
+                  <span class="badge-verified" id="upi-tier-badge">DUO + Food</span>
+                </div>
+              </div>
+
+              <div class="info-alert">
+                💡 <strong>Tip:</strong> In the transaction remarks/notes, enter your Squad Name (<span
+                  id="upi-team-remark-hint">-</span>) for immediate reconciliation.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Bank Transfer -->
+        <div class="payment-tab-content" id="tab-content-bank">
+          <div class="bank-details-card">
+            <h3 class="payment-info-title">Official Bank Account Transfer</h3>
+            <p class="payment-info-desc">Transfer via NEFT / IMPS / RTGS to our official institutional account.</p>
+
+            <div class="bank-grid">
+              <div class="bank-field">
+                <span class="bank-label">Account Name</span>
+                <div class="copy-box">
+                  <span class="copy-text" id="bank-acc-name">METAVERSITY CLUB VIT BHOPAL</span>
+                  <button type="button" class="btn-copy" data-copy-target="bank-acc-name">Copy</button>
+                </div>
+              </div>
+
+              <div class="bank-field">
+                <span class="bank-label">Account Number</span>
+                <div class="copy-box">
+                  <span class="copy-text monospace" id="bank-acc-no">50586948291</span>
+                  <button type="button" class="btn-copy" data-copy-target="bank-acc-no">Copy</button>
+                </div>
+              </div>
+
+              <div class="bank-field">
+                <span class="bank-label">IFSC Code</span>
+                <div class="copy-box">
+                  <span class="copy-text monospace" id="bank-ifsc">IDIB000V144</span>
+                  <button type="button" class="btn-copy" data-copy-target="bank-ifsc">Copy</button>
+                </div>
+              </div>
+
+              <div class="bank-field">
+                <span class="bank-label">Bank & Branch</span>
+                <div class="copy-box">
+                  <span class="copy-text" id="bank-name">Indian Bank, VIT Bhopal Branch</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary btn-back" id="btn-back-to-step-3">
+            <span class="btn-arrow">←</span> Back to Review
+          </button>
+          <button type="button" class="btn btn-primary btn-next" id="btn-goto-step-5">
+            I Have Transferred, Enter UTR <span class="btn-arrow">→</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ================= STEP 5: SUBMIT UTR & PROOF ================= -->
+      <section class="wizard-step" id="step-5">
+        <div class="step-header">
+          <div class="step-badge">Step 5 of 5</div>
+          <h2 class="step-title">Submit Transaction Reference & Proof</h2>
+          <p class="step-desc">Enter your 12-digit UTR reference and upload a screenshot of your successful transaction receipt.</p>
+        </div>
+
+        <form id="form-payment-submit" novalidate>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label for="pay-utr" class="form-label">
+                Transaction ID / UTR Number <span class="required">*</span>
+              </label>
+              <input type="text" id="pay-utr" class="form-input monospace" placeholder="e.g. 402819284729" required
+                minlength="6" maxlength="30" autocomplete="off">
+              <span class="input-hint">Unique 12-digit reference number from UPI or Bank app.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="pay-method" class="form-label">Payment Method Used <span class="required">*</span></label>
+              <select id="pay-method" class="form-input form-select" required>
+                <option value="UPI" selected>UPI (GPay / PhonePe / Paytm / BHIM)</option>
+                <option value="Bank Transfer">Bank Transfer (NEFT / IMPS / RTGS)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- File Upload Dropzone -->
+          <div class="form-group">
+            <label class="form-label">
+              Upload Payment Screenshot Proof <span class="required">*</span>
+            </label>
+            <div class="dropzone" id="proof-dropzone">
+              <input type="file" id="proof-file-input" class="dropzone-input" accept="image/png,image/jpeg,image/webp,application/pdf" required>
+              <div class="dropzone-content" id="dropzone-empty">
+                <div class="dropzone-icon">📁</div>
+                <div class="dropzone-text">
+                  <strong>Click to upload</strong> or drag & drop payment screenshot
+                </div>
+                <span class="dropzone-hint">PNG, JPG, WEBP, or PDF (Max 5MB)</span>
+              </div>
+              <div class="dropzone-preview hidden" id="dropzone-preview">
+                <div class="preview-file-icon">📄</div>
+                <div class="preview-info">
+                  <span class="preview-filename" id="preview-filename">receipt.png</span>
+                  <span class="preview-filesize" id="preview-filesize">250 KB</span>
+                </div>
+                <button type="button" class="btn-remove-file" id="btn-remove-file" title="Remove file">✕</button>
+              </div>
+            </div>
+            <span class="input-hint">Mandatory: Organizers cross-verify this screenshot before approval.</span>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary btn-back" id="btn-back-to-step-4">
+              <span class="btn-arrow">←</span> Back to Instructions
+            </button>
+            <button type="submit" class="btn btn-primary" id="btn-submit-payment">
+              Verify & Complete Registration 🚀
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ================= STEP 6: RECEIPT & SQUAD PASS ================= -->
+      <section class="wizard-step" id="step-6">
+        <div class="receipt-container">
+          <div class="reg-id-banner">
+            <div class="reg-id-badge-pill">
+              <span class="pulse-dot"></span> OFFICIAL REGISTRATION ID
+            </div>
+            <div class="reg-id-display-row">
+              <span class="reg-id-code monospace" id="receipt-reg-id">CV26-TM-XXXXX</span>
+              <button type="button" class="btn-copy-id" id="btn-copy-receipt-id">
+                <span class="copy-icon">📋</span> Copy ID
+              </button>
+            </div>
+            <p class="reg-id-sub">
+              📍 <strong>Please save or screenshot this Registration ID.</strong> You will present it at the offline desk at VIT Bhopal for venue badge issuance.
+            </p>
+          </div>
+
+          <div class="receipt-badge-top">
+            <div class="celebration-icon">🎉</div>
+            <h2 class="receipt-title">Non-VIT Squad Registered Successfully!</h2>
+            <p class="receipt-subtitle">
+              Your squad credentials and payment proof have been securely submitted to the CodeVerse 2.0 Registry.
+            </p>
+          </div>
+
+          <div class="receipt-status-card">
+            <div class="status-indicator-row">
+              <span class="status-indicator-dot pulse"></span>
+              <div class="status-indicator-text">
+                <span class="status-label">Current Verification Status:</span>
+                <span class="status-value status-pending" id="receipt-status-badge">Payment Pending / Under Verification</span>
+              </div>
+            </div>
+            <p class="status-explanation">
+              Our organizers will cross-verify your UTR reference within 2–4 hours. Once verified, an official confirmation email will be sent to the Team Leader.
+            </p>
+          </div>
+
+          <div class="receipt-meta-box">
+            <div class="receipt-meta-header">
+              <h4 class="receipt-meta-heading">📋 Squad & Payment Summary</h4>
+              <span class="receipt-stamp-badge direct-entry-pill" style="color: #6ee7b7;">DIRECT TO ROUND 2</span>
+            </div>
+
+            <div class="receipt-meta-grid">
+              <div class="receipt-meta-item">
+                <span class="meta-label">Squad Name</span>
+                <span class="meta-val meta-val-strong" id="receipt-team-name">-</span>
+              </div>
+              <div class="receipt-meta-item">
+                <span class="meta-label">Category</span>
+                <span class="meta-val meta-track-pill badge-non-vit">Non-VIT External Squad</span>
+              </div>
+              <div class="receipt-meta-item">
+                <span class="meta-label">Hackathon Track</span>
+                <span class="meta-val meta-track-pill" id="receipt-track">-</span>
+              </div>
+              <div class="receipt-meta-item">
+                <span class="meta-label">Team Leader</span>
+                <span class="meta-val" id="receipt-leader-name">-</span>
+              </div>
+              <div class="receipt-meta-item">
+                <span class="meta-label">Squad Size</span>
+                <span class="meta-val" id="receipt-member-count">2 Members</span>
+              </div>
+              <div class="receipt-meta-item">
+                <span class="meta-label">Dinner Passes</span>
+                <span class="meta-val" id="receipt-food-count">0 Passes</span>
+              </div>
+              <div class="receipt-meta-item">
+                <span class="meta-label">Transaction UTR</span>
+                <span class="meta-val monospace meta-utr-code" id="receipt-utr">-</span>
+              </div>
+              <div class="receipt-meta-item">
+                <span class="meta-label">Total Amount Paid</span>
+                <span class="meta-val meta-fee-highlight" id="receipt-amount">₹250</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="receipt-actions">
+            <button type="button" class="btn btn-outline" id="btn-print-receipt">
+              🖨️ Print / Download Squad Pass
+            </button>
+            <button type="button" class="btn btn-secondary" id="btn-track-this-team">
+              🔍 Check Live Status
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ================= TRACK STATUS MODAL ================= -->
+  <div class="modal-overlay hidden" id="track-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Track Registration Status</h3>
+        <button type="button" class="modal-close" id="modal-track-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Enter your <strong>Registration ID</strong> (e.g. <code>CV26-TM-48291</code>) to check your status.</p>
+        <div class="track-input-group">
+          <input type="text" id="track-search-input" class="form-input monospace" placeholder="CV26-TM-XXXXX" uppercase>
+          <button type="button" class="btn btn-primary" id="btn-lookup-status">Check Status</button>
+        </div>
+        <div id="track-result-container" class="track-result hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= RESUME REGISTRATION MODAL ================= -->
+  <div class="modal-overlay hidden" id="resume-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">⚡ Continue Incomplete Registration</h3>
+          <span class="modal-subtitle" style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">Pick up right where you left off & complete your payment</span>
+        </div>
+        <button type="button" class="modal-close" id="modal-resume-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          If you already confirmed your squad details and paused at the payment step, enter your
+          <strong>Registration ID</strong> (e.g. <code>CV26-TM-48291</code>) or your <strong>Team Leader Email</strong>:
+        </p>
+        <div class="track-input-group">
+          <input type="text" id="resume-search-input" class="form-input" placeholder="CV26-TM-XXXXX or leader@college.edu">
+          <button type="button" class="btn btn-primary" id="btn-lookup-resume">Find & Continue</button>
+        </div>
+        <div id="resume-error-msg" class="form-error-msg" style="margin-top: 12px; display: none; color: #ef4444; font-size: 0.9rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+      <div class="footer-left">
+        <div class="footer-brand" style="display: flex; align-items: center; gap: 14px;">
+          <img src="codeverse_logo.png" alt="CodeVerse 2.0"
+            style="width: 48px; height: 48px; border-radius: 12px; border: 1.5px solid rgba(0, 240, 255, 0.55); box-shadow: 0 0 16px rgba(139, 92, 246, 0.4); object-fit: cover;">
+          <div>
+            <span class="footer-logo">Code<span class="brand-gradient">Verse</span> 2.0</span>
+            <span class="footer-by">Presented by <strong>Metaversity Club</strong></span>
+          </div>
+        </div>
+        <p class="footer-sub">36-Hour National Flagship Hackathon • VIT Bhopal University</p>
+      </div>
+      <div class="footer-right">
+        <a href="index.html#about" class="footer-link">About</a>
+        <span class="footer-sep">•</span>
+        <a href="index.html#tracks" class="footer-link">Tracks</a>
+        <span class="footer-sep">•</span>
+        <a href="index.html#rounds" class="footer-link">Rounds & Perks</a>
+        <span class="footer-sep">•</span>
+        <a href="register.html" class="footer-link">VIT Registration</a>
+        <span class="footer-sep">•</span>
+        <a href="index.html#contact" class="footer-link">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Printable Receipt -->
+  <div id="printable-receipt-wrapper" class="printable-only">
+    <div class="print-receipt-container">
+      <div class="print-header">
+        <img src="codeverse_logo.png" alt="CodeVerse 2.0"
+          style="width: 55px; height: 55px; border-radius: 8px; margin-bottom: 8px;">
+        <h1 class="print-hackathon-name">CodeVerse 2.0</h1>
+        <p class="print-subtitle">Non-VIT Squad Registration & Entry Pass</p>
+      </div>
+
+      <div class="print-reg-highlight">
+        <span class="print-label">Official Registration ID:</span>
+        <span class="print-code" id="print-reg-id">CV26-TM-XXXXX</span>
+        <div style="margin-top: 4px; font-weight: bold; color: #10b981;">⚡ DIRECT ENTRY TO ROUND 2 OFFLINE HACKATHON</div>
+      </div>
+
+      <div class="print-grid">
+        <div class="print-item">
+          <span class="print-k">Squad Name:</span>
+          <span class="print-v" id="print-team-name">-</span>
+        </div>
+        <div class="print-item">
+          <span class="print-k">Track:</span>
+          <span class="print-v" id="print-track">-</span>
+        </div>
+        <div class="print-item">
+          <span class="print-k">Leader Name:</span>
+          <span class="print-v" id="print-leader-name">-</span>
+        </div>
+        <div class="print-item">
+          <span class="print-k">Squad Size:</span>
+          <span class="print-v" id="print-squad-size">2 Members</span>
+        </div>
+        <div class="print-item">
+          <span class="print-k">Dinner Passes:</span>
+          <span class="print-v" id="print-food-passes">0 Passes</span>
+        </div>
+        <div class="print-item">
+          <span class="print-k">Total Fee Paid:</span>
+          <span class="print-v" id="print-total-amount">₹250</span>
+        </div>
+      </div>
+
+      <div class="print-footer-msg">
+        <p>Thank you for registering for CodeVerse 2.0! We are excited to welcome your squad to VIT Bhopal on March 27–28, 2026.</p>
+        <p>Please present this pass at the registration desk for offline campus entry and badge issuance.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app-non-vit.js?v=2.4"></script>
+</body>
+
+</html>
+
