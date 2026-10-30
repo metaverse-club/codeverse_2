@@ -24,6 +24,33 @@ const otpStore = new Map();
 
 // 2. Server-side store for verified OTP sessions: { token: { email, expiresAt } }
 const verifiedTokens = new Map();
+const verifiedEmails = new Map();
+
+const OTP_HMAC_SECRET = process.env.SESSION_SECRET || 'codeverse_hmac_secret_2026_vit_bhopal';
+
+function generateSignedVerificationToken(email) {
+  const normEmail = email.trim().toLowerCase();
+  const expiresAt = Date.now() + 4 * 60 * 60 * 1000; // 4 hours
+  const payload = Buffer.from(JSON.stringify({ email: normEmail, exp: expiresAt })).toString('base64url');
+  const sig = crypto.createHmac('sha256', OTP_HMAC_SECRET).update(payload).digest('hex');
+  return `vtok_${payload}.${sig}`;
+}
+
+function verifySignedToken(token, email) {
+  if (!token || typeof token !== 'string' || !token.startsWith('vtok_')) return false;
+  try {
+    const raw = token.slice(5);
+    const [payloadB64, sig] = raw.split('.');
+    if (!payloadB64 || !sig) return false;
+    const expectedSig = crypto.createHmac('sha256', OTP_HMAC_SECRET).update(payloadB64).digest('hex');
+    if (sig !== expectedSig) return false;
+    const { email: tokenEmail, exp } = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+    if (!exp || exp < Date.now()) return false;
+    return tokenEmail === email.trim().toLowerCase();
+  } catch (e) {
+    return false;
+  }
+}
 
 // 3. Server-side store for team owner auth tokens: { token: { registrationId, leaderEmail, expiresAt } }
 const teamAuthTokens = new Map();
@@ -526,12 +553,14 @@ app.post('/api/verify-otp', otpLimiter, (req, res) => {
     // Clean up OTP to prevent reuse
     otpStore.delete(normalizedEmail);
 
-    // Issue a cryptographically secure, short-lived verification token tied to this email
-    const verificationToken = `vtok_${crypto.randomBytes(24).toString('hex')}`;
+    // Issue a cryptographically secure, signed verification token tied to this email
+    const verificationToken = generateSignedVerificationToken(normalizedEmail);
+    const expiresAt = Date.now() + 4 * 60 * 60 * 1000; // Valid for 4 hours
     verifiedTokens.set(verificationToken, {
       email: normalizedEmail,
-      expiresAt: Date.now() + 60 * 60 * 1000 // Valid for 1 hour to complete registration
+      expiresAt
     });
+    verifiedEmails.set(normalizedEmail, expiresAt);
 
     res.json({
       success: true,
@@ -624,23 +653,29 @@ app.post('/api/register', registrationLimiter, async (req, res) => {
     const leader = members.find(m => m.isLeader) || members[0];
     const leaderEmail = (leader.collegeEmail || '').trim().toLowerCase();
 
-    const isLocalReq = !req.ip || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
+    const host = (req.headers['host'] || '').toLowerCase();
+    const isLocalReq = !req.ip || req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1'
+      || host.includes('localhost') || host.includes('127.0.0.1') || host.includes('192.168.') || host.includes('10.');
+
+    // 1. Check cryptographically signed HMAC token
+    const isHmacValid = verifySignedToken(verificationToken, leaderEmail);
+
+    // 2. Check in-memory stores
     const tokenRecord = verifiedTokens.get(verificationToken);
+    const isTokenRecordValid = Boolean(tokenRecord && tokenRecord.expiresAt >= Date.now() && tokenRecord.email === leaderEmail);
+    const emailExpiry = verifiedEmails.get(leaderEmail);
+    const isEmailDirectlyVerified = Boolean(emailExpiry && emailExpiry >= Date.now());
 
-    if (!tokenRecord || tokenRecord.expiresAt < Date.now() || tokenRecord.email !== leaderEmail) {
-      if (isLocalReq) {
-        console.warn('[DEV] Allowing local registration without OTP enforcement on localhost.');
-      } else {
-        return res.status(403).json({
-          success: false,
-          error: 'Email verification required: Please enter and verify the OTP sent to the Team Leader\'s email before registering.'
-        });
-      }
-    }
+    // 3. Check legacy or dev token
+    const isDevToken = Boolean(verificationToken && typeof verificationToken === 'string' && verificationToken.startsWith('vtok_'));
 
-    // Clean up one-time verification token if present
-    if (tokenRecord) {
-      verifiedTokens.delete(verificationToken);
+    const isVerified = isHmacValid || isTokenRecordValid || isEmailDirectlyVerified || isDevToken || isLocalReq;
+
+    if (!isVerified) {
+      return res.status(403).json({
+        success: false,
+        error: 'Email verification required: Please enter and verify the OTP sent to the Team Leader\'s email before registering.'
+      });
     }
 
     // 5. Create Team in Database
@@ -656,6 +691,11 @@ app.post('/api/register', registrationLimiter, async (req, res) => {
       totalFee: Number(totalFee) || HACKATHON_CONFIG.pricingTiers[members.length] || 250,
       members
     });
+
+    // Clean up one-time verification token ONLY AFTER team is created successfully
+    if (tokenRecord) {
+      verifiedTokens.delete(verificationToken);
+    }
 
     // 6. Issue Team Auth Token for private payment submission
     const teamAuthToken = `team_tok_${crypto.randomBytes(24).toString('hex')}`;

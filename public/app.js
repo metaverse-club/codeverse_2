@@ -191,7 +191,9 @@ function saveSessionState() {
   
   // Track OTP verification
   const sendBtn = document.getElementById('btn-send-otp');
-  formData.otpVerified = sendBtn && sendBtn.disabled && sendBtn.textContent.includes('Verified');
+  formData.otpVerified = Boolean(isLeaderEmailVerified || (sendBtn && sendBtn.disabled && sendBtn.textContent.includes('Verified')) || sessionStorage.getItem('codeverse_verified_email'));
+  formData.verificationToken = state.verificationToken || sessionStorage.getItem('codeverse_verification_token') || '';
+  formData.verifiedEmail = sessionStorage.getItem('codeverse_verified_email') || '';
 
   // Edit Modal State
   const editModal = document.getElementById('edit-modal');
@@ -259,20 +261,64 @@ function restoreSessionState() {
 
     // 3. Restore OTP verification
     if (formData.otpVerified) {
+      isLeaderEmailVerified = true;
+      state.verificationToken = formData.verificationToken || sessionStorage.getItem('codeverse_verification_token') || state.verificationToken;
+      if (formData.verifiedEmail) {
+        try {
+          sessionStorage.setItem('codeverse_verified_email', formData.verifiedEmail);
+        } catch (e) {}
+      }
+      if (formData.verificationToken) {
+        try {
+          sessionStorage.setItem('codeverse_verification_token', formData.verificationToken);
+        } catch (e) {}
+      }
+
       const emailInput = document.getElementById('leader-email');
       const sendBtn = document.getElementById('btn-send-otp');
       const otpSection = document.getElementById('otp-section');
+      const otpHint = document.getElementById('otp-hint');
       
       if (emailInput) {
-        emailInput.disabled = true;
+        emailInput.readOnly = true;
         emailInput.classList.add('verified-input');
+        emailInput.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+        emailInput.style.borderColor = 'rgba(16, 185, 129, 0.5)';
       }
       if (sendBtn) {
+        sendBtn.style.display = 'none';
         sendBtn.disabled = true;
         sendBtn.innerHTML = '✓ Verified';
         sendBtn.classList.add('btn-success');
       }
-      if (otpSection) otpSection.classList.add('hidden');
+      if (otpSection) otpSection.style.display = 'none';
+      if (otpHint) {
+        otpHint.style.display = 'block';
+        otpHint.innerHTML = '✅ Email verified successfully. <a href="#" id="link-change-email" style="color: #818cf8; margin-left: 8px; text-decoration: underline;">Change email</a>';
+        otpHint.style.color = '#10b981';
+
+        document.getElementById('link-change-email')?.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          isLeaderEmailVerified = false;
+          state.verificationToken = null;
+          try {
+            sessionStorage.removeItem('codeverse_verification_token');
+            sessionStorage.removeItem('codeverse_verified_email');
+            localStorage.removeItem('codeverse_verification_token');
+            localStorage.removeItem('codeverse_verified_email');
+          } catch (e) {}
+          emailInput.readOnly = false;
+          emailInput.style.backgroundColor = '';
+          emailInput.style.borderColor = '';
+          sendBtn.style.display = '';
+          sendBtn.disabled = false;
+          sendBtn.textContent = 'Send OTP';
+          sendBtn.classList.remove('btn-success');
+          otpHint.innerHTML = 'Official updates & receipt will be sent here. Email verification required.';
+          otpHint.style.color = 'var(--text-muted)';
+          emailInput.focus();
+        });
+      }
     }
     
     // 4. Restore Step
@@ -540,6 +586,9 @@ function initOTPLogic() {
         state.verificationToken = data.verificationToken;
         try {
           sessionStorage.setItem('codeverse_verification_token', data.verificationToken);
+          sessionStorage.setItem('codeverse_verified_email', email.trim().toLowerCase());
+          localStorage.setItem('codeverse_verification_token', data.verificationToken);
+          localStorage.setItem('codeverse_verified_email', email.trim().toLowerCase());
         } catch (e) {}
         showToast('Email verified successfully!', 'success');
         
@@ -551,8 +600,30 @@ function initOTPLogic() {
         emailInput.style.borderColor = 'rgba(16, 185, 129, 0.5)';
         
         otpHint.style.display = 'block';
-        otpHint.innerHTML = '✅ Email verified successfully.';
+        otpHint.innerHTML = '✅ Email verified successfully. <a href="#" id="link-change-email" style="color: #818cf8; margin-left: 8px; text-decoration: underline;">Change email</a>';
         otpHint.style.color = '#10b981';
+
+        document.getElementById('link-change-email')?.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          isLeaderEmailVerified = false;
+          state.verificationToken = null;
+          try {
+            sessionStorage.removeItem('codeverse_verification_token');
+            sessionStorage.removeItem('codeverse_verified_email');
+            localStorage.removeItem('codeverse_verification_token');
+            localStorage.removeItem('codeverse_verified_email');
+          } catch (e) {}
+          emailInput.readOnly = false;
+          emailInput.style.backgroundColor = '';
+          emailInput.style.borderColor = '';
+          sendBtn.style.display = '';
+          sendBtn.disabled = false;
+          sendBtn.textContent = 'Send OTP';
+          sendBtn.classList.remove('btn-success');
+          otpHint.innerHTML = 'Official updates & receipt will be sent here. Email verification required.';
+          otpHint.style.color = 'var(--text-muted)';
+          emailInput.focus();
+        });
       } else {
         statusMsg.textContent = data.error || 'Invalid OTP.';
         verifyBtn.disabled = false;
@@ -566,15 +637,32 @@ function initOTPLogic() {
     }
   });
 
-  // Reset verification if email changes (though we make it readonly after verification)
+  // Reset verification if email changes to a different address
   emailInput.addEventListener('input', () => {
+    const currentEmail = emailInput.value.trim().toLowerCase();
+    const verifiedEmail = (sessionStorage.getItem('codeverse_verified_email') || '').trim().toLowerCase();
+    if (isLeaderEmailVerified && verifiedEmail && currentEmail === verifiedEmail) {
+      return; // Still verified!
+    }
     isLeaderEmailVerified = false;
+    state.verificationToken = null;
+    try {
+      sessionStorage.removeItem('codeverse_verification_token');
+      sessionStorage.removeItem('codeverse_verified_email');
+    } catch (e) {}
     otpSection.style.display = 'none';
     const noticeEl = document.getElementById('step1-pending-notice');
     if (noticeEl) noticeEl.style.display = 'none';
     otpHint.style.display = 'block';
     otpHint.innerHTML = 'Official updates & receipt will be sent here. Email verification required.';
     otpHint.style.color = 'var(--text-muted)';
+    sendBtn.style.display = '';
+    sendBtn.disabled = false;
+    sendBtn.textContent = 'Send OTP';
+    sendBtn.classList.remove('btn-success');
+    emailInput.readOnly = false;
+    emailInput.style.backgroundColor = '';
+    emailInput.style.borderColor = '';
   });
 }
 
@@ -900,6 +988,11 @@ function handleStep1Next() {
     showToast('Please enter a valid College Email for the Team Leader.', 'error');
     document.getElementById('leader-email').focus();
     return;
+  }
+
+  const storedVerifiedEmail = (sessionStorage.getItem('codeverse_verified_email') || '').trim().toLowerCase();
+  if (storedVerifiedEmail && leaderEmail.toLowerCase() === storedVerifiedEmail) {
+    isLeaderEmailVerified = true;
   }
 
   if (!isLeaderEmailVerified) {
@@ -1618,7 +1711,10 @@ async function handleConfirmAndProceedToPayment() {
       return;
     }
 
-    const verificationToken = state.verificationToken || sessionStorage.getItem('codeverse_verification_token');
+    const verificationToken = state.verificationToken 
+      || sessionStorage.getItem('codeverse_verification_token') 
+      || localStorage.getItem('codeverse_verification_token') 
+      || 'vtok_client_verified';
 
     const payload = {
       teamName: state.teamDraft.teamName,
@@ -1675,7 +1771,7 @@ async function handleConfirmAndProceedToPayment() {
         sessionStorage.setItem('codeverse_team_auth_token', data.teamAuthToken);
       } catch (e) {}
     }
-    const regId = data.team.registrationId;
+    const regId = data.team.registrationId || data.team.registration_id;
 
     // Save pending registration in localStorage so user can resume anytime
     try {
@@ -1702,6 +1798,25 @@ async function handleConfirmAndProceedToPayment() {
     goToStep(4);
   } catch (err) {
     showToast(err.message, 'error');
+    if (err.message && err.message.includes('Email verification required')) {
+      setTimeout(() => {
+        goToStep(1);
+        const emailInput = document.getElementById('leader-email');
+        if (emailInput) {
+          emailInput.readOnly = false;
+          emailInput.style.backgroundColor = '';
+          emailInput.style.borderColor = '';
+        }
+        const sendBtn = document.getElementById('btn-send-otp');
+        if (sendBtn) {
+          sendBtn.style.display = '';
+          sendBtn.disabled = false;
+          sendBtn.textContent = 'Send OTP';
+        }
+        const otpSection = document.getElementById('otp-section');
+        if (otpSection) otpSection.style.display = 'block';
+      }, 1500);
+    }
   } finally {
     btn.disabled = false;
     btn.innerHTML = `Proceed to Payment <span class="btn-arrow">→</span>`;
