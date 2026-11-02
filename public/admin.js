@@ -892,11 +892,15 @@ function openDetailModal(team) {
 
   // Populate Roster Table
   const rosterTbody = document.getElementById('modal-roster-tbody');
-  rosterTbody.innerHTML = (team.members || []).map(m => `
+  const isNonVitTeam = team.teamType === 'NON_VIT';
+  rosterTbody.innerHTML = (team.members || []).map(m => {
+    const isExt = isNonVitTeam || (m.regNumber && m.regNumber.startsWith('EXT-'));
+    const regDisplay = isExt ? '<span class="text-muted">—</span>' : escapeHtml(m.regNumber || '—');
+    return `
     <tr>
       <td>${m.isLeader ? '<strong class="text-amber">👑 Leader</strong>' : 'Member'}</td>
       <td><strong>${escapeHtml(m.fullName)}</strong></td>
-      <td class="monospace">${escapeHtml(m.regNumber)}</td>
+      <td class="monospace">${regDisplay}</td>
       <td>
         <a href="mailto:${escapeHtml(m.collegeEmail)}">${escapeHtml(m.collegeEmail)}</a>
       </td>
@@ -905,7 +909,8 @@ function openDetailModal(team) {
       </td>
       <td>${formatAdminResidence(m, team)}</td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 
   // Payment Details
   const p = team.payment;
@@ -966,6 +971,13 @@ function openAdminEditModal(team) {
   document.getElementById('edit-project-title').value = team.projectTitle || '';
 
   // Set members (2-5 members)
+  const isNonVit = team.teamType === 'NON_VIT';
+  const getRegVal = (m) => {
+    if (!m || !m.regNumber) return '';
+    if (isNonVit || m.regNumber.startsWith('EXT-')) return '';
+    return m.regNumber;
+  };
+
   const members = team.members || [];
   const m1 = members.find(m => m.isLeader) || members[0] || {};
   const nonLeaders = members.filter(m => !m.isLeader);
@@ -975,32 +987,46 @@ function openAdminEditModal(team) {
   const m5 = nonLeaders[3] || {};
 
   document.getElementById('edit-m1-name').value = m1.fullName || '';
-  document.getElementById('edit-m1-reg').value = m1.regNumber || '';
+  document.getElementById('edit-m1-reg').value = getRegVal(m1);
   document.getElementById('edit-m1-email').value = m1.collegeEmail || '';
   document.getElementById('edit-m1-phone').value = m1.phone || '';
 
   document.getElementById('edit-m2-name').value = m2.fullName || '';
-  document.getElementById('edit-m2-reg').value = m2.regNumber || '';
+  document.getElementById('edit-m2-reg').value = getRegVal(m2);
   document.getElementById('edit-m2-email').value = m2.collegeEmail || '';
   document.getElementById('edit-m2-phone').value = m2.phone || '';
 
   document.getElementById('edit-m3-name').value = m3.fullName || '';
-  document.getElementById('edit-m3-reg').value = m3.regNumber || '';
+  document.getElementById('edit-m3-reg').value = getRegVal(m3);
   document.getElementById('edit-m3-email').value = m3.collegeEmail || '';
   document.getElementById('edit-m3-phone').value = m3.phone || '';
 
   document.getElementById('edit-m4-name').value = m4.fullName || '';
-  document.getElementById('edit-m4-reg').value = m4.regNumber || '';
+  document.getElementById('edit-m4-reg').value = getRegVal(m4);
   document.getElementById('edit-m4-email').value = m4.collegeEmail || '';
   document.getElementById('edit-m4-phone').value = m4.phone || '';
 
   const m5NameEl = document.getElementById('edit-m5-name');
   if (m5NameEl) {
     m5NameEl.value = m5.fullName || '';
-    document.getElementById('edit-m5-reg').value = m5.regNumber || '';
+    document.getElementById('edit-m5-reg').value = getRegVal(m5);
     document.getElementById('edit-m5-email').value = m5.collegeEmail || '';
     document.getElementById('edit-m5-phone').value = m5.phone || '';
   }
+
+  // Reg numbers are only mandatory for VIT students
+  ['edit-m1-reg', 'edit-m2-reg', 'edit-m3-reg', 'edit-m4-reg', 'edit-m5-reg'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (isNonVit) {
+        el.removeAttribute('required');
+        el.placeholder = 'Not required for Non-VIT';
+      } else {
+        if (id === 'edit-m1-reg' || id === 'edit-m2-reg') el.setAttribute('required', 'required');
+        el.placeholder = 'e.g. 24BCY10389';
+      }
+    }
+  });
 
   // Set residence inputs for all members
   const memberArr = [m1, m2, m3, m4, m5];
@@ -1074,50 +1100,78 @@ async function handleAdminEditSubmit(e) {
     }
   };
 
+  const isNonVit = editingTeam.teamType === 'NON_VIT';
+  const origMembers = editingTeam.members || [];
+  const origM1 = origMembers.find(m => m.isLeader) || origMembers[0] || {};
+  const origNonLeaders = origMembers.filter(m => !m.isLeader);
+
+  const getRegNumberForMember = (idx, fallback) => {
+    const val = document.getElementById(`edit-m${idx}-reg`)?.value.trim() || '';
+    if (val) return val;
+    if (isNonVit) {
+      return (fallback && fallback.regNumber) ? fallback.regNumber : `EXT-${Math.floor(100000 + Math.random() * 900000)}`;
+    }
+    return '';
+  };
+
+  const getAcademicFields = (fallback) => {
+    if (!isNonVit) return {};
+    return {
+      collegeName: fallback?.collegeName || fallback?.college_name || 'External College',
+      yearOfStudy: fallback?.yearOfStudy || fallback?.year_of_study || '2nd Year',
+      degree: fallback?.degree || ''
+    };
+  };
+
   const rawMembers = [
     {
       fullName: document.getElementById('edit-m1-name').value.trim(),
-      regNumber: document.getElementById('edit-m1-reg').value.trim(),
+      regNumber: getRegNumberForMember(1, origM1),
       collegeEmail: document.getElementById('edit-m1-email').value.trim(),
       phone: document.getElementById('edit-m1-phone').value.trim(),
+      ...getAcademicFields(origM1),
       ...getMemberResidence(1),
       isLeader: true
     },
     {
       fullName: document.getElementById('edit-m2-name').value.trim(),
-      regNumber: document.getElementById('edit-m2-reg').value.trim(),
+      regNumber: getRegNumberForMember(2, origNonLeaders[0]),
       collegeEmail: document.getElementById('edit-m2-email').value.trim(),
       phone: document.getElementById('edit-m2-phone').value.trim(),
+      ...getAcademicFields(origNonLeaders[0]),
       ...getMemberResidence(2),
       isLeader: false
     },
     {
       fullName: document.getElementById('edit-m3-name')?.value.trim() || '',
-      regNumber: document.getElementById('edit-m3-reg')?.value.trim() || '',
+      regNumber: getRegNumberForMember(3, origNonLeaders[1]),
       collegeEmail: document.getElementById('edit-m3-email')?.value.trim() || '',
       phone: document.getElementById('edit-m3-phone')?.value.trim() || '',
+      ...getAcademicFields(origNonLeaders[1]),
       ...getMemberResidence(3),
       isLeader: false
     },
     {
       fullName: document.getElementById('edit-m4-name')?.value.trim() || '',
-      regNumber: document.getElementById('edit-m4-reg')?.value.trim() || '',
+      regNumber: getRegNumberForMember(4, origNonLeaders[2]),
       collegeEmail: document.getElementById('edit-m4-email')?.value.trim() || '',
       phone: document.getElementById('edit-m4-phone')?.value.trim() || '',
+      ...getAcademicFields(origNonLeaders[2]),
       ...getMemberResidence(4),
       isLeader: false
     },
     {
       fullName: document.getElementById('edit-m5-name')?.value.trim() || '',
-      regNumber: document.getElementById('edit-m5-reg')?.value.trim() || '',
+      regNumber: getRegNumberForMember(5, origNonLeaders[3]),
       collegeEmail: document.getElementById('edit-m5-email')?.value.trim() || '',
       phone: document.getElementById('edit-m5-phone')?.value.trim() || '',
+      ...getAcademicFields(origNonLeaders[3]),
       ...getMemberResidence(5),
       isLeader: false
     }
   ];
 
-  const activeMembers = rawMembers.filter((m, i) => i < 2 || (m.fullName && m.regNumber));
+  const activeMembers = rawMembers.filter((m, i) => i < 2 || (m.fullName && (m.regNumber || isNonVit)));
 
   const payload = {
     teamName: document.getElementById('edit-team-name').value.trim(),

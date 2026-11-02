@@ -1038,10 +1038,17 @@
                 <input type="text" id="edit-leader-name" class="form-input" required>
               </div>
 
-              <div class="form-group">
+              <div class="form-group" id="edit-leader-reg-group">
                 <label for="edit-leader-reg" class="form-label">College Reg. / Roll No. <span
                     class="required">*</span></label>
                 <input type="text" id="edit-leader-reg" class="form-input" required>
+              </div>
+
+              <div class="form-group hidden" id="edit-leader-college-group">
+                <label for="edit-leader-college" class="form-label">College / University Name <span
+                    class="required">*</span></label>
+                <input type="text" id="edit-leader-college" class="form-input"
+                  placeholder="e.g. IIT Delhi / DTU / LNCT Bhopal">
               </div>
 
               <div class="form-group">
@@ -1053,6 +1060,26 @@
                 <label for="edit-leader-phone" class="form-label">Phone / WhatsApp Number <span
                     class="required">*</span></label>
                 <input type="tel" id="edit-leader-phone" class="form-input" required maxlength="15">
+              </div>
+
+              <div class="form-group hidden" id="edit-leader-year-group">
+                <label for="edit-leader-year" class="form-label">Year of Study <span class="required">*</span></label>
+                <select id="edit-leader-year" class="form-input form-select">
+                  <option value="1st Year">1st Year</option>
+                  <option value="2nd Year" selected>2nd Year</option>
+                  <option value="3rd Year">3rd Year</option>
+                  <option value="4th Year">4th Year</option>
+                  <option value="5th Year">5th Year</option>
+                  <option value="Postgraduate">Postgraduate</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div class="form-group hidden" id="edit-leader-degree-group">
+                <label for="edit-leader-degree" class="form-label">Degree & Branch <span
+                    class="required">*</span></label>
+                <input type="text" id="edit-leader-degree" class="form-input"
+                  placeholder="e.g. B.Tech Computer Science / BCA">
               </div>
             </div>
 

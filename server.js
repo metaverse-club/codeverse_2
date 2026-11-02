@@ -335,6 +335,14 @@ app.get('/api/team/edit-info/:registrationId', async (req, res) => {
       return res.status(404).json({ success: false, error: `Team with Registration ID "${registrationId}" was not found.` });
     }
 
+    // Editing is strictly reserved for teams that have submitted their payment
+    if (team.status === 'PENDING_PAYMENT') {
+      return res.status(403).json({
+        success: false,
+        error: 'Editing is only available for teams that have completed registration and submitted payment.'
+      });
+    }
+
     // Authorization check: Leader Email or Token
     const leaderEmailParam = req.query.leaderEmail ? req.query.leaderEmail.trim().toLowerCase() : null;
     const providedToken = req.query.token || (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') ? req.headers.authorization.substring(7).trim() : null);
@@ -390,6 +398,8 @@ app.put('/api/team/update', async (req, res) => {
     if (Array.isArray(members)) {
       for (const m of members) {
         if (containsMaliciousHtml(m.fullName) || containsMaliciousHtml(m.regNumber) ||
+            containsMaliciousHtml(m.collegeName) || containsMaliciousHtml(m.yearOfStudy) ||
+            containsMaliciousHtml(m.degree) ||
             containsMaliciousHtml(m.hostelBlock) || containsMaliciousHtml(m.roomNo) ||
             containsMaliciousHtml(m.dayScholarLocation) || containsMaliciousHtml(m.residenceAddress)) {
           return res.status(400).json({ success: false, error: 'HTML tags or script injections are not allowed in member details.' });
@@ -401,6 +411,14 @@ app.put('/api/team/update', async (req, res) => {
     const team = await db.getTeamByRegistrationId(registrationId.trim());
     if (!team) {
       return res.status(404).json({ success: false, error: 'Team not found.' });
+    }
+
+    // Editing is strictly reserved for teams that have submitted payment
+    if (team.status === 'PENDING_PAYMENT') {
+      return res.status(403).json({
+        success: false,
+        error: 'Editing is restricted to teams with completed payment.'
+      });
     }
 
     const leader = team.leader || (team.members && team.members.find(m => m.isLeader)) || (team.members && team.members[0]);

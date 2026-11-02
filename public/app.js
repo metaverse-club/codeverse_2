@@ -2179,15 +2179,17 @@ async function handleTrackLookup() {
         `}
       </div>
 
-      <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+      <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; align-items: center;">
         ${team.status === 'PENDING_PAYMENT' ? `
+          <span style="font-size: 0.82rem; color: #f59e0b; margin-right: auto;">⚠️ Complete payment to unlock team editing</span>
           <button type="button" class="btn btn-primary btn-sm" id="btn-track-resume-pay">
             ⚡ Complete Payment Now
           </button>
-        ` : ''}
-        <button type="button" class="btn btn-outline btn-sm" id="btn-track-jump-edit" style="gap: 0.4rem;">
-          ✏️ Edit Team / Member Details
-        </button>
+        ` : `
+          <button type="button" class="btn btn-outline btn-sm" id="btn-track-jump-edit" style="gap: 0.4rem;">
+            ✏️ Edit Team / Member Details
+          </button>
+        `}
       </div>
     `;
 
@@ -2606,13 +2608,22 @@ async function handleLookupEdit(isRestoring = false) {
 
     // Deadline is still open! Populate the form
     if (expiredBanner) expiredBanner.classList.add('hidden');
-    if (form) form.classList.remove('hidden');
 
     const team = data.team;
+    if (team.status === 'PENDING_PAYMENT') {
+      if (form) form.classList.add('hidden');
+      showToast('Editing is locked: You must submit your registration payment first to enable editing team details.', 'warning');
+      return;
+    }
+
+    if (form) form.classList.remove('hidden');
+
     const regIdValue = team.registration_id || team.registrationId;
     const teamNameValue = team.team_name || team.teamName || '';
+    const isNonVit = (team.teamType || team.team_type) === 'NON_VIT';
     
     editState.registrationId = regIdValue;
+    editState.teamType = isNonVit ? 'NON_VIT' : 'VIT';
     editState.deadline = data.editDeadline;
     editState.isDeadlinePassed = false;
 
@@ -2633,53 +2644,102 @@ async function handleLookupEdit(isRestoring = false) {
 
     // Leader Details
     const leader = team.leader || (team.members && team.members.find(m => m.is_leader === true || m.isLeader === true)) || (team.members && team.members[0]) || {};
+    editState.leader = leader;
+    editState.leaderReg = leader.reg_number || leader.regNumber || '';
     document.getElementById('edit-leader-name').value = leader.full_name || leader.fullName || '';
-    document.getElementById('edit-leader-reg').value = leader.reg_number || leader.regNumber || '';
     document.getElementById('edit-leader-email').value = leader.college_email || leader.collegeEmail || '';
     document.getElementById('edit-leader-phone').value = leader.phone || '';
 
-    // Edit Leader Residence
-    const editLeaderResType = leader.residence_type || leader.residenceType || 'HOSTELLER';
-    const editLeaderBlock = leader.hostel_block || leader.hostelBlock || '';
-    const editLeaderRoom = leader.room_no || leader.roomNo || '';
-    const editLeaderDetails = leader.hostel_details || leader.hostelDetails || '';
-    const editLeaderDayType = leader.day_scholar_type || leader.dayScholarType || 'LOCAL';
-    const editLeaderDayLoc = leader.day_scholar_location || leader.dayScholarLocation || '';
-    const editLeaderAddress = leader.residence_address || leader.residenceAddress || '';
-    const editLeaderCommute = leader.commute_mode || leader.commuteMode || '';
+    // Non-VIT vs VIT Adaptive fields for Leader
+    const leaderRegGroup = document.getElementById('edit-leader-reg-group');
+    const leaderRegInput = document.getElementById('edit-leader-reg');
+    const leaderCollegeGroup = document.getElementById('edit-leader-college-group');
+    const leaderCollegeInput = document.getElementById('edit-leader-college');
+    const leaderYearGroup = document.getElementById('edit-leader-year-group');
+    const leaderYearSelect = document.getElementById('edit-leader-year');
+    const leaderDegreeGroup = document.getElementById('edit-leader-degree-group');
+    const leaderDegreeInput = document.getElementById('edit-leader-degree');
+    const leaderResidenceBox = document.getElementById('edit-leader-residence-box');
 
-    const elEditResType = document.getElementById('edit-leader-residence-type');
-    const elEditBlock = document.getElementById('edit-leader-hostel-block');
-    const elEditRoom = document.getElementById('edit-leader-room-no');
-    const elEditDetails = document.getElementById('edit-leader-hostel-details');
-    const elEditDayType = document.getElementById('edit-leader-dayscholar-type');
-    const elEditDayLoc = document.getElementById('edit-leader-dayscholar-location');
-    const elEditAddress = document.getElementById('edit-leader-residence-address');
-    const elEditCommute = document.getElementById('edit-leader-commute-mode');
+    if (isNonVit) {
+      if (leaderRegGroup) leaderRegGroup.classList.add('hidden');
+      if (leaderRegInput) {
+        leaderRegInput.required = false;
+        leaderRegInput.value = '';
+      }
+      if (leaderResidenceBox) leaderResidenceBox.classList.add('hidden');
 
-    if (elEditResType) elEditResType.value = editLeaderResType;
-    if (elEditBlock) elEditBlock.value = editLeaderBlock;
-    if (elEditRoom) elEditRoom.value = editLeaderRoom;
-    if (elEditDetails) elEditDetails.value = editLeaderDetails;
-    if (elEditDayType) elEditDayType.value = editLeaderDayType;
-    if (elEditDayLoc) elEditDayLoc.value = editLeaderDayLoc;
-    if (elEditAddress) elEditAddress.value = editLeaderAddress;
-    if (elEditCommute) elEditCommute.value = editLeaderCommute;
-
-    const btnEditHosteller = document.getElementById('btn-edit-leader-res-hosteller');
-    const btnEditDay = document.getElementById('btn-edit-leader-res-dayscholar');
-    const editHostelBox = document.getElementById('edit-leader-hostel-container');
-    const editDayBox = document.getElementById('edit-leader-dayscholar-container');
-    if (editLeaderResType === 'HOSTELLER') {
-      btnEditHosteller?.classList.add('active');
-      btnEditDay?.classList.remove('active');
-      editHostelBox?.classList.remove('hidden');
-      editDayBox?.classList.add('hidden');
+      if (leaderCollegeGroup) leaderCollegeGroup.classList.remove('hidden');
+      if (leaderCollegeInput) {
+        leaderCollegeInput.required = true;
+        leaderCollegeInput.value = leader.collegeName || leader.college_name || '';
+      }
+      if (leaderYearGroup) leaderYearGroup.classList.remove('hidden');
+      if (leaderYearSelect) {
+        leaderYearSelect.value = leader.yearOfStudy || leader.year_of_study || '2nd Year';
+      }
+      if (leaderDegreeGroup) leaderDegreeGroup.classList.remove('hidden');
+      if (leaderDegreeInput) {
+        leaderDegreeInput.required = true;
+        leaderDegreeInput.value = leader.degree || '';
+      }
     } else {
-      btnEditHosteller?.classList.remove('active');
-      btnEditDay?.classList.add('active');
-      editHostelBox?.classList.add('hidden');
-      editDayBox?.classList.remove('hidden');
+      if (leaderRegGroup) leaderRegGroup.classList.remove('hidden');
+      if (leaderRegInput) {
+        leaderRegInput.required = true;
+        leaderRegInput.value = leader.reg_number || leader.regNumber || '';
+      }
+      if (leaderResidenceBox) leaderResidenceBox.classList.remove('hidden');
+
+      if (leaderCollegeGroup) leaderCollegeGroup.classList.add('hidden');
+      if (leaderCollegeInput) leaderCollegeInput.required = false;
+      if (leaderYearGroup) leaderYearGroup.classList.add('hidden');
+      if (leaderDegreeGroup) leaderDegreeGroup.classList.add('hidden');
+      if (leaderDegreeInput) leaderDegreeInput.required = false;
+
+      // Edit Leader Residence (VIT Hosteller/Day Scholar)
+      const editLeaderResType = leader.residence_type || leader.residenceType || 'HOSTELLER';
+      const editLeaderBlock = leader.hostel_block || leader.hostelBlock || '';
+      const editLeaderRoom = leader.room_no || leader.roomNo || '';
+      const editLeaderDetails = leader.hostel_details || leader.hostelDetails || '';
+      const editLeaderDayType = leader.day_scholar_type || leader.dayScholarType || 'LOCAL';
+      const editLeaderDayLoc = leader.day_scholar_location || leader.dayScholarLocation || '';
+      const editLeaderAddress = leader.residence_address || leader.residenceAddress || '';
+      const editLeaderCommute = leader.commute_mode || leader.commuteMode || '';
+
+      const elEditResType = document.getElementById('edit-leader-residence-type');
+      const elEditBlock = document.getElementById('edit-leader-hostel-block');
+      const elEditRoom = document.getElementById('edit-leader-room-no');
+      const elEditDetails = document.getElementById('edit-leader-hostel-details');
+      const elEditDayType = document.getElementById('edit-leader-dayscholar-type');
+      const elEditDayLoc = document.getElementById('edit-leader-dayscholar-location');
+      const elEditAddress = document.getElementById('edit-leader-residence-address');
+      const elEditCommute = document.getElementById('edit-leader-commute-mode');
+
+      if (elEditResType) elEditResType.value = editLeaderResType;
+      if (elEditBlock) elEditBlock.value = editLeaderBlock;
+      if (elEditRoom) elEditRoom.value = editLeaderRoom;
+      if (elEditDetails) elEditDetails.value = editLeaderDetails;
+      if (elEditDayType) elEditDayType.value = editLeaderDayType;
+      if (elEditDayLoc) elEditDayLoc.value = editLeaderDayLoc;
+      if (elEditAddress) elEditAddress.value = editLeaderAddress;
+      if (elEditCommute) elEditCommute.value = editLeaderCommute;
+
+      const btnEditHosteller = document.getElementById('btn-edit-leader-res-hosteller');
+      const btnEditDay = document.getElementById('btn-edit-leader-res-dayscholar');
+      const editHostelBox = document.getElementById('edit-leader-hostel-container');
+      const editDayBox = document.getElementById('edit-leader-dayscholar-container');
+      if (editLeaderResType === 'HOSTELLER') {
+        btnEditHosteller?.classList.add('active');
+        btnEditDay?.classList.remove('active');
+        editHostelBox?.classList.remove('hidden');
+        editDayBox?.classList.add('hidden');
+      } else {
+        btnEditHosteller?.classList.remove('active');
+        btnEditDay?.classList.add('active');
+        editHostelBox?.classList.add('hidden');
+        editDayBox?.classList.remove('hidden');
+      }
     }
 
     // Additional Members (Filter OUT leader so leader isn't duplicated)
@@ -2692,6 +2752,9 @@ async function handleLookupEdit(isRestoring = false) {
     editState.members = nonLeaderMembers.map((m, idx) => ({
       id: `edit_mem_${idx + 1}`,
       fullName: m.full_name || m.fullName || '',
+      collegeName: m.college_name || m.collegeName || '',
+      yearOfStudy: m.year_of_study || m.yearOfStudy || '2nd Year',
+      degree: m.degree || '',
       regNumber: m.reg_number || m.regNumber || '',
       collegeEmail: m.college_email || m.collegeEmail || '',
       phone: m.phone || '',
@@ -2702,7 +2765,8 @@ async function handleLookupEdit(isRestoring = false) {
       dayScholarType: m.day_scholar_type || m.dayScholarType || 'LOCAL',
       dayScholarLocation: m.day_scholar_location || m.dayScholarLocation || '',
       residenceAddress: m.residence_address || m.residenceAddress || '',
-      commuteMode: m.commute_mode || m.commuteMode || ''
+      commuteMode: m.commute_mode || m.commuteMode || '',
+      wantsFood: Boolean(m.wants_food || m.wantsFood)
     }));
     editState.originalMemberCount = 1 + editState.members.length;
 
@@ -2731,6 +2795,7 @@ function renderEditMembers() {
   if (!container) return;
 
   container.innerHTML = '';
+  const isNonVit = editState.teamType === 'NON_VIT';
 
   editState.members.forEach((member, index) => {
     const memberNum = index + 2; // Member 1 is Team Leader
@@ -2738,90 +2803,141 @@ function renderEditMembers() {
     card.className = 'member-card';
     card.id = `edit-card-${member.id}`;
 
-    card.innerHTML = `
-      <div class="member-card-top">
-        <div class="member-title-wrapper">
-          <span class="member-idx">Member ${memberNum}</span>
-        </div>
-        <span class="input-hint" style="color: rgba(255, 255, 255, 0.45); font-size: 0.8rem;">🔒 Fixed Member Slot</span>
-      </div>
-
-      <div class="form-grid-2">
-        <div class="form-group">
-          <label class="form-label">Full Name <span class="required">*</span></label>
-          <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="fullName" value="${escapeHtml(member.fullName)}" placeholder="e.g. Priya Nair" required>
+    if (isNonVit) {
+      card.innerHTML = `
+        <div class="member-card-top">
+          <div class="member-title-wrapper">
+            <span class="member-idx">Member ${memberNum}</span>
+          </div>
+          <span class="input-hint" style="color: rgba(255, 255, 255, 0.45); font-size: 0.8rem;">🔒 Fixed Member Slot (Non-VIT)</span>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">College Reg. Number <span class="required">*</span></label>
-          <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="regNumber" value="${escapeHtml(member.regNumber)}" placeholder="e.g. 22BCE1088" required>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Full Name <span class="required">*</span></label>
+            <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="fullName" value="${escapeHtml(member.fullName)}" placeholder="e.g. Priya Nair" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">College / University Name <span class="required">*</span></label>
+            <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="collegeName" value="${escapeHtml(member.collegeName || '')}" placeholder="e.g. IIT Delhi / DTU / LNCT" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">College / Personal Email <span class="required">*</span></label>
+            <input type="email" class="form-input edit-member-field" data-id="${member.id}" data-key="collegeEmail" value="${escapeHtml(member.collegeEmail)}" placeholder="e.g. priya.nair@college.edu" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Phone Number <span class="required">*</span></label>
+            <input type="tel" class="form-input edit-member-field" data-id="${member.id}" data-key="phone" value="${escapeHtml(member.phone)}" placeholder="e.g. 9876543211" required maxlength="15">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Year of Study <span class="required">*</span></label>
+            <select class="form-input form-select edit-member-field" data-id="${member.id}" data-key="yearOfStudy" required>
+              <option value="1st Year" ${member.yearOfStudy === '1st Year' ? 'selected' : ''}>1st Year</option>
+              <option value="2nd Year" ${member.yearOfStudy === '2nd Year' || !member.yearOfStudy ? 'selected' : ''}>2nd Year</option>
+              <option value="3rd Year" ${member.yearOfStudy === '3rd Year' ? 'selected' : ''}>3rd Year</option>
+              <option value="4th Year" ${member.yearOfStudy === '4th Year' ? 'selected' : ''}>4th Year</option>
+              <option value="5th Year" ${member.yearOfStudy === '5th Year' ? 'selected' : ''}>5th Year</option>
+              <option value="Postgraduate" ${member.yearOfStudy === 'Postgraduate' ? 'selected' : ''}>Postgraduate</option>
+              <option value="Other" ${member.yearOfStudy === 'Other' ? 'selected' : ''}>Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Degree & Branch <span class="required">*</span></label>
+            <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="degree" value="${escapeHtml(member.degree || '')}" placeholder="e.g. B.Tech Computer Science / BCA" required>
+          </div>
+        </div>
+      `;
+    } else {
+      card.innerHTML = `
+        <div class="member-card-top">
+          <div class="member-title-wrapper">
+            <span class="member-idx">Member ${memberNum}</span>
+          </div>
+          <span class="input-hint" style="color: rgba(255, 255, 255, 0.45); font-size: 0.8rem;">🔒 Fixed Member Slot</span>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">College Email <span class="required">*</span></label>
-          <input type="email" class="form-input edit-member-field" data-id="${member.id}" data-key="collegeEmail" value="${escapeHtml(member.collegeEmail)}" placeholder="e.g. priya.nair@college.edu" required>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Full Name <span class="required">*</span></label>
+            <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="fullName" value="${escapeHtml(member.fullName)}" placeholder="e.g. Priya Nair" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">College Reg. Number <span class="required">*</span></label>
+            <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="regNumber" value="${escapeHtml(member.regNumber)}" placeholder="e.g. 22BCE1088" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">College Email <span class="required">*</span></label>
+            <input type="email" class="form-input edit-member-field" data-id="${member.id}" data-key="collegeEmail" value="${escapeHtml(member.collegeEmail)}" placeholder="e.g. priya.nair@college.edu" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Phone Number <span class="required">*</span></label>
+            <input type="tel" class="form-input edit-member-field" data-id="${member.id}" data-key="phone" value="${escapeHtml(member.phone)}" placeholder="e.g. 9876543211" required maxlength="15">
+          </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Phone Number <span class="required">*</span></label>
-          <input type="tel" class="form-input edit-member-field" data-id="${member.id}" data-key="phone" value="${escapeHtml(member.phone)}" placeholder="e.g. 9876543211" required maxlength="15">
-        </div>
-      </div>
+        <!-- Member Residence Box in Edit Modal -->
+        <div class="residence-box" id="edit-residence-box-${member.id}" style="margin-top: 16px;">
+          <div class="residence-header">
+            <span class="residence-title">
+              <span>🏠</span> Residence & Accommodation Status <span class="required">*</span>
+            </span>
+          </div>
 
-      <!-- Member Residence Box in Edit Modal -->
-      <div class="residence-box" id="edit-residence-box-${member.id}" style="margin-top: 16px;">
-        <div class="residence-header">
-          <span class="residence-title">
-            <span>🏠</span> Residence & Accommodation Status <span class="required">*</span>
-          </span>
-        </div>
+          <div class="residence-type-selector">
+            <button type="button" class="residence-pill-btn hosteller ${member.residenceType !== 'DAY_SCHOLAR' ? 'active' : ''}" data-member-id="${member.id}" data-type="HOSTELLER">
+              <span>🏢</span> Hosteller
+            </button>
+            <button type="button" class="residence-pill-btn dayscholar ${member.residenceType === 'DAY_SCHOLAR' ? 'active' : ''}" data-member-id="${member.id}" data-type="DAY_SCHOLAR">
+              <span>🚌</span> Day Scholar
+            </button>
+          </div>
+          <input type="hidden" class="edit-member-field" data-id="${member.id}" data-key="residenceType" value="${member.residenceType || 'HOSTELLER'}">
 
-        <div class="residence-type-selector">
-          <button type="button" class="residence-pill-btn hosteller ${member.residenceType !== 'DAY_SCHOLAR' ? 'active' : ''}" data-member-id="${member.id}" data-type="HOSTELLER">
-            <span>🏢</span> Hosteller
-          </button>
-          <button type="button" class="residence-pill-btn dayscholar ${member.residenceType === 'DAY_SCHOLAR' ? 'active' : ''}" data-member-id="${member.id}" data-type="DAY_SCHOLAR">
-            <span>🚌</span> Day Scholar
-          </button>
-        </div>
-        <input type="hidden" class="edit-member-field" data-id="${member.id}" data-key="residenceType" value="${member.residenceType || 'HOSTELLER'}">
+          <!-- Hosteller Subform -->
+          <div class="residence-subform ${member.residenceType === 'DAY_SCHOLAR' ? 'hidden' : ''}" id="edit-hostel-subform-${member.id}">
+            <div class="form-grid-2">
+              <div class="form-group mb-0">
+                <label class="form-label">Hostel Block</label>
+                <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="hostelBlock" value="${escapeHtml(member.hostelBlock || '')}" placeholder="e.g. Block 1 / Block 2">
+              </div>
+              <div class="form-group mb-0">
+                <label class="form-label">Room Number</label>
+                <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="roomNo" value="${escapeHtml(member.roomNo || '')}" placeholder="e.g. 204">
+              </div>
+            </div>
+          </div>
 
-        <!-- Hosteller Subform -->
-        <div class="residence-subform ${member.residenceType === 'DAY_SCHOLAR' ? 'hidden' : ''}" id="edit-hostel-subform-${member.id}">
-          <div class="form-grid-2">
+          <!-- Day Scholar Subform -->
+          <div class="residence-subform ${member.residenceType !== 'DAY_SCHOLAR' ? 'hidden' : ''}" id="edit-dayscholar-subform-${member.id}">
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label">Scholar Category</label>
+                <select class="form-input form-select edit-member-field" data-id="${member.id}" data-key="dayScholarType">
+                  <option value="LOCAL" ${member.dayScholarType !== 'NON_LOCAL' ? 'selected' : ''}>Local Resident (Commuter)</option>
+                  <option value="NON_LOCAL" ${member.dayScholarType === 'NON_LOCAL' ? 'selected' : ''}>Non-Local (PG / Rental flat)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">City / Area / Town</label>
+                <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="dayScholarLocation" value="${escapeHtml(member.dayScholarLocation || '')}" placeholder="e.g. Bhopal, Sehore">
+              </div>
+            </div>
             <div class="form-group mb-0">
-              <label class="form-label">Hostel Block</label>
-              <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="hostelBlock" value="${escapeHtml(member.hostelBlock || '')}" placeholder="e.g. Block 1 / Block 2">
-            </div>
-            <div class="form-group mb-0">
-              <label class="form-label">Room Number</label>
-              <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="roomNo" value="${escapeHtml(member.roomNo || '')}" placeholder="e.g. 204">
+              <label class="form-label">Detailed Address / PG Name</label>
+              <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="residenceAddress" value="${escapeHtml(member.residenceAddress || '')}" placeholder="e.g. Balaji PG, Kothri">
             </div>
           </div>
         </div>
-
-        <!-- Day Scholar Subform -->
-        <div class="residence-subform ${member.residenceType !== 'DAY_SCHOLAR' ? 'hidden' : ''}" id="edit-dayscholar-subform-${member.id}">
-          <div class="form-grid-2">
-            <div class="form-group">
-              <label class="form-label">Scholar Category</label>
-              <select class="form-input form-select edit-member-field" data-id="${member.id}" data-key="dayScholarType">
-                <option value="LOCAL" ${member.dayScholarType !== 'NON_LOCAL' ? 'selected' : ''}>Local Resident (Commuter)</option>
-                <option value="NON_LOCAL" ${member.dayScholarType === 'NON_LOCAL' ? 'selected' : ''}>Non-Local (PG / Rental flat)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">City / Area / Town</label>
-              <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="dayScholarLocation" value="${escapeHtml(member.dayScholarLocation || '')}" placeholder="e.g. Bhopal, Sehore">
-            </div>
-          </div>
-          <div class="form-group mb-0">
-            <label class="form-label">Detailed Address / PG Name</label>
-            <input type="text" class="form-input edit-member-field" data-id="${member.id}" data-key="residenceAddress" value="${escapeHtml(member.residenceAddress || '')}" placeholder="e.g. Balaji PG, Kothri">
-          </div>
-        </div>
-      </div>
-    `;
+      `;
+    }
 
     container.appendChild(card);
   });
@@ -2891,13 +3007,13 @@ async function handleSaveTeamEdit(e) {
   }
 
   // 1. Collect inputs
+  const isNonVit = editState.teamType === 'NON_VIT';
   const teamName = document.getElementById('edit-team-name')?.value.trim();
   const track = document.getElementById('edit-team-track')?.value;
   const projectTitle = document.getElementById('edit-project-title')?.value.trim();
   const referral = document.getElementById('edit-referral')?.value.trim() || '';
 
   const leaderName = document.getElementById('edit-leader-name')?.value.trim();
-  const leaderReg = document.getElementById('edit-leader-reg')?.value.trim();
   const leaderEmail = document.getElementById('edit-leader-email')?.value.trim().toLowerCase();
   const leaderPhone = document.getElementById('edit-leader-phone')?.value.trim().replace(/\D/g, '');
 
@@ -2907,8 +3023,8 @@ async function handleSaveTeamEdit(e) {
     return;
   }
 
-  if (!leaderName || !leaderReg || !leaderEmail || !leaderPhone) {
-    showToast('All Team Leader fields are mandatory.', 'warning');
+  if (!leaderName || !leaderEmail || !leaderPhone) {
+    showToast('Leader Name, Email, and Phone number are mandatory.', 'warning');
     return;
   }
 
@@ -2924,25 +3040,58 @@ async function handleSaveTeamEdit(e) {
     return;
   }
 
-  // Leader Residence Validation
-  const editLeaderResType = document.getElementById('edit-leader-residence-type')?.value || 'HOSTELLER';
-  const editLeaderBlock = document.getElementById('edit-leader-hostel-block')?.value.trim() || '';
-  const editLeaderRoom = document.getElementById('edit-leader-room-no')?.value.trim() || '';
-  const editLeaderDetails = document.getElementById('edit-leader-hostel-details')?.value.trim() || '';
-  const editLeaderDayType = document.getElementById('edit-leader-dayscholar-type')?.value || 'LOCAL';
-  const editLeaderDayLoc = document.getElementById('edit-leader-dayscholar-location')?.value.trim() || '';
-  const editLeaderAddress = document.getElementById('edit-leader-residence-address')?.value.trim() || '';
-  const editLeaderCommute = document.getElementById('edit-leader-commute-mode')?.value.trim() || '';
+  let leaderCollege = '';
+  let leaderYear = '';
+  let leaderDegree = '';
+  let leaderReg = '';
+  let editLeaderResType = 'HOSTELLER';
+  let editLeaderBlock = '';
+  let editLeaderRoom = '';
+  let editLeaderDayType = 'LOCAL';
+  let editLeaderDayLoc = '';
+  let editLeaderAddress = '';
 
-  if (editLeaderResType === 'HOSTELLER') {
-    if (!editLeaderBlock || !editLeaderRoom) {
-      showToast('Hostel Block and Room Number are required for Team Leader.', 'warning');
+  if (isNonVit) {
+    leaderCollege = document.getElementById('edit-leader-college')?.value.trim();
+    leaderYear = document.getElementById('edit-leader-year')?.value || '2nd Year';
+    leaderDegree = document.getElementById('edit-leader-degree')?.value.trim();
+
+    if (!leaderCollege) {
+      showToast('Please enter College / University Name for Team Leader.', 'warning');
+      document.getElementById('edit-leader-college')?.focus();
       return;
     }
-  } else {
-    if (!editLeaderDayLoc || !editLeaderAddress) {
-      showToast('City/Area and Address/PG details are required for Team Leader.', 'warning');
+    if (!leaderDegree) {
+      showToast('Please enter Degree & Branch for Team Leader.', 'warning');
+      document.getElementById('edit-leader-degree')?.focus();
       return;
+    }
+    leaderReg = editState.leaderReg || `EXT-${Math.floor(100000 + Math.random() * 900000)}`;
+  } else {
+    leaderReg = document.getElementById('edit-leader-reg')?.value.trim();
+    if (!leaderReg) {
+      showToast('College Reg. / Roll Number is required for Team Leader.', 'warning');
+      document.getElementById('edit-leader-reg')?.focus();
+      return;
+    }
+
+    editLeaderResType = document.getElementById('edit-leader-residence-type')?.value || 'HOSTELLER';
+    editLeaderBlock = document.getElementById('edit-leader-hostel-block')?.value.trim() || '';
+    editLeaderRoom = document.getElementById('edit-leader-room-no')?.value.trim() || '';
+    editLeaderDayType = document.getElementById('edit-leader-dayscholar-type')?.value || 'LOCAL';
+    editLeaderDayLoc = document.getElementById('edit-leader-dayscholar-location')?.value.trim() || '';
+    editLeaderAddress = document.getElementById('edit-leader-residence-address')?.value.trim() || '';
+
+    if (editLeaderResType === 'HOSTELLER') {
+      if (!editLeaderBlock || !editLeaderRoom) {
+        showToast('Hostel Block and Room Number are required for Team Leader.', 'warning');
+        return;
+      }
+    } else {
+      if (!editLeaderDayLoc || !editLeaderAddress) {
+        showToast('City/Area and Address/PG details are required for Team Leader.', 'warning');
+        return;
+      }
     }
   }
 
@@ -2959,13 +3108,16 @@ async function handleSaveTeamEdit(e) {
 
   // 3. Validate each additional member
   const emailSet = new Set([leaderEmail]);
-  const regSet = new Set([leaderReg.toUpperCase()]);
+  const regSet = new Set(leaderReg ? [leaderReg.toUpperCase()] : []);
   const formattedMembers = [
     {
       fullName: leaderName,
-      regNumber: leaderReg.toUpperCase(),
+      regNumber: leaderReg ? leaderReg.toUpperCase() : '',
       collegeEmail: leaderEmail,
       phone: leaderPhone,
+      collegeName: isNonVit ? leaderCollege : 'VIT Bhopal University',
+      yearOfStudy: isNonVit ? leaderYear : '',
+      degree: isNonVit ? leaderDegree : '',
       residenceType: editLeaderResType,
       hostelBlock: editLeaderBlock,
       roomNo: editLeaderRoom,
@@ -2980,64 +3132,114 @@ async function handleSaveTeamEdit(e) {
     const mem = editState.members[i];
     const memberNum = i + 2;
 
-    if (!mem.fullName || !mem.regNumber || !mem.collegeEmail || !mem.phone) {
-      showToast(`Please fill all details for Member ${memberNum}.`, 'warning');
-      return;
-    }
-
-    const cleanEmail = mem.collegeEmail.toLowerCase();
-    const cleanReg = mem.regNumber.toUpperCase();
-    const cleanPhone = mem.phone.replace(/\D/g, '');
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      showToast(`Invalid email address for Member ${memberNum}.`, 'warning');
-      return;
-    }
-
-    if (cleanPhone.length < 10) {
-      showToast(`Phone number for Member ${memberNum} must be at least 10 digits.`, 'warning');
-      return;
-    }
-
-    if (emailSet.has(cleanEmail)) {
-      showToast(`Duplicate email detected (${cleanEmail}) across team roster. Each member must have a unique email.`, 'warning');
-      return;
-    }
-
-    if (regSet.has(cleanReg)) {
-      showToast(`Duplicate registration number detected (${cleanReg}). Each member must be unique.`, 'warning');
-      return;
-    }
-
-    // Member Residence Validation
-    if (mem.residenceType === 'HOSTELLER') {
-      if (!mem.hostelBlock || !mem.roomNo) {
-        showToast(`Hostel Block and Room Number are required for Member ${memberNum}.`, 'warning');
+    if (isNonVit) {
+      if (!mem.fullName || !mem.collegeName || !mem.collegeEmail || !mem.phone || !mem.degree) {
+        showToast(`Please fill all details (Name, College, Year, Degree, Email, Phone) for Member ${memberNum}.`, 'warning');
         return;
       }
+
+      const cleanEmail = mem.collegeEmail.toLowerCase().trim();
+      const cleanPhone = mem.phone.replace(/\D/g, '');
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        showToast(`Invalid email address for Member ${memberNum}.`, 'warning');
+        return;
+      }
+
+      if (cleanPhone.length < 10) {
+        showToast(`Phone number for Member ${memberNum} must be at least 10 digits.`, 'warning');
+        return;
+      }
+
+      if (emailSet.has(cleanEmail)) {
+        showToast(`Duplicate email detected (${cleanEmail}) across team roster. Each member must have a unique email.`, 'warning');
+        return;
+      }
+      emailSet.add(cleanEmail);
+
+      const cleanReg = (mem.regNumber && !mem.regNumber.startsWith('EXT-')) ? mem.regNumber.toUpperCase() : (mem.regNumber || `EXT-${Math.floor(100000 + Math.random() * 900000)}`);
+
+      formattedMembers.push({
+        fullName: mem.fullName.trim(),
+        collegeName: mem.collegeName.trim(),
+        yearOfStudy: mem.yearOfStudy || '2nd Year',
+        degree: mem.degree.trim(),
+        regNumber: cleanReg,
+        collegeEmail: cleanEmail,
+        phone: cleanPhone,
+        residenceType: 'HOSTELLER',
+        hostelBlock: '',
+        roomNo: '',
+        dayScholarType: 'LOCAL',
+        dayScholarLocation: '',
+        residenceAddress: '',
+        wantsFood: Boolean(mem.wantsFood),
+        isLeader: false
+      });
     } else {
-      if (!mem.dayScholarLocation || !mem.residenceAddress) {
-        showToast(`City/Area and Address/PG details are required for Member ${memberNum}.`, 'warning');
+      if (!mem.fullName || !mem.regNumber || !mem.collegeEmail || !mem.phone) {
+        showToast(`Please fill all details for Member ${memberNum}.`, 'warning');
         return;
       }
+
+      const cleanEmail = mem.collegeEmail.toLowerCase().trim();
+      const cleanReg = mem.regNumber.toUpperCase().trim();
+      const cleanPhone = mem.phone.replace(/\D/g, '');
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        showToast(`Invalid email address for Member ${memberNum}.`, 'warning');
+        return;
+      }
+
+      if (cleanPhone.length < 10) {
+        showToast(`Phone number for Member ${memberNum} must be at least 10 digits.`, 'warning');
+        return;
+      }
+
+      if (emailSet.has(cleanEmail)) {
+        showToast(`Duplicate email detected (${cleanEmail}) across team roster. Each member must have a unique email.`, 'warning');
+        return;
+      }
+
+      if (regSet.has(cleanReg)) {
+        showToast(`Duplicate registration number detected (${cleanReg}). Each member must be unique.`, 'warning');
+        return;
+      }
+
+      // Member Residence Validation
+      if (mem.residenceType === 'HOSTELLER') {
+        if (!mem.hostelBlock || !mem.roomNo) {
+          showToast(`Hostel Block and Room Number are required for Member ${memberNum}.`, 'warning');
+          return;
+        }
+      } else {
+        if (!mem.dayScholarLocation || !mem.residenceAddress) {
+          showToast(`City/Area and Address/PG details are required for Member ${memberNum}.`, 'warning');
+          return;
+        }
+      }
+
+      emailSet.add(cleanEmail);
+      regSet.add(cleanReg);
+
+      formattedMembers.push({
+        fullName: mem.fullName.trim(),
+        regNumber: cleanReg,
+        collegeEmail: cleanEmail,
+        phone: cleanPhone,
+        collegeName: 'VIT Bhopal University',
+        yearOfStudy: '',
+        degree: '',
+        residenceType: mem.residenceType || 'HOSTELLER',
+        hostelBlock: mem.hostelBlock || '',
+        roomNo: mem.roomNo || '',
+        dayScholarType: mem.dayScholarType || 'LOCAL',
+        dayScholarLocation: mem.dayScholarLocation || '',
+        residenceAddress: mem.residenceAddress || '',
+        wantsFood: Boolean(mem.wantsFood),
+        isLeader: false
+      });
     }
-
-    emailSet.add(cleanEmail);
-    regSet.add(cleanReg);
-
-    formattedMembers.push({
-      fullName: mem.fullName,
-      regNumber: cleanReg,
-      collegeEmail: cleanEmail,
-      phone: cleanPhone,
-      residenceType: mem.residenceType || 'HOSTELLER',
-      hostelBlock: mem.hostelBlock || '',
-      roomNo: mem.roomNo || '',
-      dayScholarType: mem.dayScholarType || 'LOCAL',
-      dayScholarLocation: mem.dayScholarLocation || '',
-      residenceAddress: mem.residenceAddress || '',
-      isLeader: false
-    });
   }
 
   // 4. Submit payload to API

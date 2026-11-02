@@ -253,6 +253,12 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
       const m5Res = getMemberResidence(m5);
 
       const isNonVitTeam = (team.teamType || team.team_type) === 'NON_VIT';
+      const cleanRegVal = (reg) => {
+        if (isNonVitTeam) return '—';
+        if (!reg || reg === '—' || String(reg).startsWith('EXT-')) return '—';
+        return String(reg).trim();
+      };
+
       const hasFoodPass = team.hasFood || team.has_food;
       const foodCount = team.foodCount || team.food_count || 0;
       const foodAmt = team.foodAmount || team.food_amount || 0;
@@ -272,7 +278,7 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
 
         // Leader
         leaderName: leader.fullName || leader.full_name || '—',
-        leaderRegNo: leader.regNumber || leader.reg_number || '—',
+        leaderRegNo: cleanRegVal(leader.regNumber || leader.reg_number),
         leaderEmail: leader.collegeEmail || leader.college_email || '—',
         leaderPhone: leader.phone || '—',
         leaderResType: leaderRes.type,
@@ -280,7 +286,7 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
 
         // Member 2
         m2Name: m2.fullName || m2.full_name || '—',
-        m2RegNo: m2.regNumber || m2.reg_number || '—',
+        m2RegNo: cleanRegVal(m2.regNumber || m2.reg_number),
         m2Email: m2.collegeEmail || m2.college_email || '—',
         m2Phone: m2.phone || '—',
         m2ResType: m2Res.type,
@@ -288,7 +294,7 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
 
         // Member 3
         m3Name: m3.fullName || m3.full_name || '—',
-        m3RegNo: m3.regNumber || m3.reg_number || '—',
+        m3RegNo: cleanRegVal(m3.regNumber || m3.reg_number),
         m3Email: m3.collegeEmail || m3.college_email || '—',
         m3Phone: m3.phone || '—',
         m3ResType: m3Res.type,
@@ -296,7 +302,7 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
 
         // Member 4
         m4Name: m4.fullName || m4.full_name || '—',
-        m4RegNo: m4.regNumber || m4.reg_number || '—',
+        m4RegNo: cleanRegVal(m4.regNumber || m4.reg_number),
         m4Email: m4.collegeEmail || m4.college_email || '—',
         m4Phone: m4.phone || '—',
         m4ResType: m4Res.type,
@@ -304,7 +310,7 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
 
         // Member 5
         m5Name: m5.fullName || m5.full_name || '—',
-        m5RegNo: m5.regNumber || m5.reg_number || '—',
+        m5RegNo: cleanRegVal(m5.regNumber || m5.reg_number),
         m5Email: m5.collegeEmail || m5.college_email || '—',
         m5Phone: m5.phone || '—',
         m5ResType: m5Res.type,
@@ -444,7 +450,7 @@ async function generateRegistrationExcel(teams = [], metrics = {}) {
         role: m.isLeader ? 'Team Leader' : 'Member',
         fullName: m.fullName || m.full_name || '—',
         collegeName: isVit ? 'VIT Bhopal University' : (m.collegeName || m.college_name || 'External College'),
-        regNumber: m.regNumber || m.reg_number || '—',
+        regNumber: (!isVit || (m.regNumber && String(m.regNumber).startsWith('EXT-'))) ? '—' : (m.regNumber || m.reg_number || '—'),
         collegeEmail: m.collegeEmail || m.college_email || '—',
         phone: m.phone || '—',
         yearDegree: `${m.yearOfStudy || m.year_of_study || ''} ${m.degree ? '• ' + m.degree : ''}`.trim() || '—',
