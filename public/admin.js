@@ -1123,6 +1123,11 @@ async function handleAdminEditSubmit(e) {
     };
   };
 
+  const getMemberWantsFood = (fallback) => {
+    if (!fallback) return false;
+    return Boolean(fallback.wantsFood !== undefined ? fallback.wantsFood : fallback.wants_food);
+  };
+
   const rawMembers = [
     {
       fullName: document.getElementById('edit-m1-name').value.trim(),
@@ -1131,6 +1136,7 @@ async function handleAdminEditSubmit(e) {
       phone: document.getElementById('edit-m1-phone').value.trim(),
       ...getAcademicFields(origM1),
       ...getMemberResidence(1),
+      wantsFood: getMemberWantsFood(origM1),
       isLeader: true
     },
     {
@@ -1140,6 +1146,7 @@ async function handleAdminEditSubmit(e) {
       phone: document.getElementById('edit-m2-phone').value.trim(),
       ...getAcademicFields(origNonLeaders[0]),
       ...getMemberResidence(2),
+      wantsFood: getMemberWantsFood(origNonLeaders[0]),
       isLeader: false
     },
     {
@@ -1149,6 +1156,7 @@ async function handleAdminEditSubmit(e) {
       phone: document.getElementById('edit-m3-phone')?.value.trim() || '',
       ...getAcademicFields(origNonLeaders[1]),
       ...getMemberResidence(3),
+      wantsFood: getMemberWantsFood(origNonLeaders[1]),
       isLeader: false
     },
     {
@@ -1158,6 +1166,7 @@ async function handleAdminEditSubmit(e) {
       phone: document.getElementById('edit-m4-phone')?.value.trim() || '',
       ...getAcademicFields(origNonLeaders[2]),
       ...getMemberResidence(4),
+      wantsFood: getMemberWantsFood(origNonLeaders[2]),
       isLeader: false
     },
     {
@@ -1167,6 +1176,7 @@ async function handleAdminEditSubmit(e) {
       phone: document.getElementById('edit-m5-phone')?.value.trim() || '',
       ...getAcademicFields(origNonLeaders[3]),
       ...getMemberResidence(5),
+      wantsFood: getMemberWantsFood(origNonLeaders[3]),
       isLeader: false
     }
   ];

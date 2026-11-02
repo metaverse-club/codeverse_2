@@ -2808,6 +2808,7 @@ function renderEditMembers() {
         <div class="member-card-top">
           <div class="member-title-wrapper">
             <span class="member-idx">Member ${memberNum}</span>
+            ${member.wantsFood ? '<span class="badge-status-pill badge-food text-xs" style="margin-left:8px;">🍽️ Dinner Pass Included</span>' : ''}
           </div>
           <span class="input-hint" style="color: rgba(255, 255, 255, 0.45); font-size: 0.8rem;">🔒 Fixed Member Slot (Non-VIT)</span>
         </div>
@@ -3124,6 +3125,7 @@ async function handleSaveTeamEdit(e) {
       dayScholarType: editLeaderDayType,
       dayScholarLocation: editLeaderDayLoc,
       residenceAddress: editLeaderAddress,
+      wantsFood: Boolean(editState.leader && (editState.leader.wantsFood || editState.leader.wants_food)),
       isLeader: true
     }
   ];

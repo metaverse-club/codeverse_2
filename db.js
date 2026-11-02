@@ -745,33 +745,61 @@ async function updateTeamDetails({ registrationId, teamName, track, projectTitle
     }
 
     // Delete existing members from all_participants
+    const existingMembers = team.members || [];
     await supabase.from('all_participants').delete().eq('team_id', team.id);
 
     const isNonVit = team.teamType === 'NON_VIT';
-    const participantsToInsert = members.map(m => ({
-      id: crypto.randomUUID ? crypto.randomUUID() : `part_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      team_id: team.id,
-      registration_id: team.registrationId,
-      team_name: updateFields.team_name,
-      category: isNonVit ? 'NON_VIT' : 'VIT',
-      is_leader: Boolean(m.isLeader),
-      role: m.isLeader ? 'Leader' : 'Member',
-      full_name: m.fullName.trim(),
-      college_name: isNonVit ? (m.collegeName || 'External College') : 'VIT Bhopal University',
-      reg_number: (m.regNumber && !m.regNumber.startsWith('EXT-')) ? m.regNumber.trim().toUpperCase() : (isNonVit ? (m.regNumber || `EXT-${Math.floor(100000 + Math.random() * 900000)}`) : (m.regNumber || '').trim().toUpperCase()),
-      college_email: m.collegeEmail.trim().toLowerCase(),
-      phone: m.phone.trim(),
-      year_of_study: m.yearOfStudy || '',
-      degree: m.degree || '',
-      residence_type: m.residenceType || 'HOSTELLER',
-      hostel_block: m.hostelBlock || '',
-      room_no: m.roomNo || '',
-      day_scholar_location: m.dayScholarLocation || '',
-      residence_address: m.residenceAddress || '',
-      wants_food: Boolean(m.wantsFood),
-      payment_status: team.status,
-      created_at: now
-    }));
+    const participantsToInsert = members.map(m => {
+      const existingMem = existingMembers.find(em =>
+        (em.collegeEmail && m.collegeEmail && em.collegeEmail.trim().toLowerCase() === m.collegeEmail.trim().toLowerCase()) ||
+        (em.fullName && m.fullName && em.fullName.trim().toLowerCase() === m.fullName.trim().toLowerCase()) ||
+        (Boolean(em.isLeader) && Boolean(m.isLeader))
+      );
+      const resolvedWantsFood = (m.wantsFood !== undefined && m.wantsFood !== null)
+        ? Boolean(m.wantsFood)
+        : (existingMem ? Boolean(existingMem.wantsFood || existingMem.wants_food) : false);
+
+      return {
+        id: crypto.randomUUID ? crypto.randomUUID() : `part_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        team_id: team.id,
+        registration_id: team.registrationId,
+        team_name: updateFields.team_name,
+        category: isNonVit ? 'NON_VIT' : 'VIT',
+        is_leader: Boolean(m.isLeader),
+        role: m.isLeader ? 'Leader' : 'Member',
+        full_name: m.fullName.trim(),
+        college_name: isNonVit ? (m.collegeName || 'External College') : 'VIT Bhopal University',
+        reg_number: (m.regNumber && !m.regNumber.startsWith('EXT-')) ? m.regNumber.trim().toUpperCase() : (isNonVit ? (m.regNumber || `EXT-${Math.floor(100000 + Math.random() * 900000)}`) : (m.regNumber || '').trim().toUpperCase()),
+        college_email: m.collegeEmail.trim().toLowerCase(),
+        phone: m.phone.trim(),
+        year_of_study: m.yearOfStudy || '',
+        degree: m.degree || '',
+        residence_type: m.residenceType || 'HOSTELLER',
+        hostel_block: m.hostelBlock || '',
+        room_no: m.roomNo || '',
+        day_scholar_location: m.dayScholarLocation || '',
+        residence_address: m.residenceAddress || '',
+        wants_food: resolvedWantsFood,
+        payment_status: team.status,
+        created_at: now
+      };
+    });
+
+    // Safeguard: For Non-VIT teams with paid dinner passes, ensure paid passes are never lost
+    if (isNonVit && (team.hasFood || team.has_food) && (team.foodCount || team.food_count) > 0) {
+      const targetFoodCount = Math.min(Number(team.foodCount || team.food_count) || 0, participantsToInsert.length);
+      const activeFoodCount = participantsToInsert.filter(p => p.wants_food).length;
+      if (activeFoodCount < targetFoodCount) {
+        let needed = targetFoodCount - activeFoodCount;
+        for (const p of participantsToInsert) {
+          if (needed <= 0) break;
+          if (!p.wants_food) {
+            p.wants_food = true;
+            needed--;
+          }
+        }
+      }
+    }
 
     await supabase.from('all_participants').insert(participantsToInsert);
 
@@ -1042,33 +1070,63 @@ async function adminUpdateTeam({ registrationId, teamName, track, projectTitle, 
   }
 
   if (members && Array.isArray(members) && members.length > 0) {
+    const existingMembers = team.members || [];
     await supabase.from('all_participants').delete().eq('team_id', team.id);
 
     const isNonVit = (teamType || team.teamType) === 'NON_VIT';
-    const participantsToInsert = members.map(m => ({
-      id: crypto.randomUUID ? crypto.randomUUID() : `part_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      team_id: team.id,
-      registration_id: team.registrationId,
-      team_name: updateFields.team_name,
-      category: isNonVit ? 'NON_VIT' : 'VIT',
-      is_leader: Boolean(m.isLeader),
-      role: m.isLeader ? 'Leader' : 'Member',
-      full_name: m.fullName.trim(),
-      college_name: isNonVit ? (m.collegeName || 'External College') : 'VIT Bhopal University',
-      reg_number: (m.regNumber && !m.regNumber.startsWith('EXT-')) ? m.regNumber.trim().toUpperCase() : (isNonVit ? (m.regNumber || `EXT-${Math.floor(100000 + Math.random() * 900000)}`) : (m.regNumber || '').trim().toUpperCase()),
-      college_email: m.collegeEmail.trim().toLowerCase(),
-      phone: m.phone.trim(),
-      year_of_study: m.yearOfStudy || '',
-      degree: m.degree || '',
-      residence_type: m.residenceType || 'HOSTELLER',
-      hostel_block: m.hostelBlock || '',
-      room_no: m.roomNo || '',
-      day_scholar_location: m.dayScholarLocation || '',
-      residence_address: m.residenceAddress || '',
-      wants_food: Boolean(m.wantsFood),
-      payment_status: status || team.status,
-      created_at: now
-    }));
+    const participantsToInsert = members.map(m => {
+      const existingMem = existingMembers.find(em =>
+        (em.collegeEmail && m.collegeEmail && em.collegeEmail.trim().toLowerCase() === m.collegeEmail.trim().toLowerCase()) ||
+        (em.fullName && m.fullName && em.fullName.trim().toLowerCase() === m.fullName.trim().toLowerCase()) ||
+        (Boolean(em.isLeader) && Boolean(m.isLeader))
+      );
+      const resolvedWantsFood = (m.wantsFood !== undefined && m.wantsFood !== null)
+        ? Boolean(m.wantsFood)
+        : (existingMem ? Boolean(existingMem.wantsFood || existingMem.wants_food) : false);
+
+      return {
+        id: crypto.randomUUID ? crypto.randomUUID() : `part_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        team_id: team.id,
+        registration_id: team.registrationId,
+        team_name: updateFields.team_name,
+        category: isNonVit ? 'NON_VIT' : 'VIT',
+        is_leader: Boolean(m.isLeader),
+        role: m.isLeader ? 'Leader' : 'Member',
+        full_name: m.fullName.trim(),
+        college_name: isNonVit ? (m.collegeName || 'External College') : 'VIT Bhopal University',
+        reg_number: (m.regNumber && !m.regNumber.startsWith('EXT-')) ? m.regNumber.trim().toUpperCase() : (isNonVit ? (m.regNumber || `EXT-${Math.floor(100000 + Math.random() * 900000)}`) : (m.regNumber || '').trim().toUpperCase()),
+        college_email: m.collegeEmail.trim().toLowerCase(),
+        phone: m.phone.trim(),
+        year_of_study: m.yearOfStudy || '',
+        degree: m.degree || '',
+        residence_type: m.residenceType || 'HOSTELLER',
+        hostel_block: m.hostelBlock || '',
+        room_no: m.roomNo || '',
+        day_scholar_location: m.dayScholarLocation || '',
+        residence_address: m.residenceAddress || '',
+        wants_food: resolvedWantsFood,
+        payment_status: status || team.status,
+        created_at: now
+      };
+    });
+
+    // Safeguard: For Non-VIT teams with paid dinner passes, ensure paid passes are never lost
+    const finalHasFood = hasFood !== undefined ? Boolean(hasFood) : (team.hasFood || team.has_food);
+    const finalFoodCount = foodCount !== undefined ? Number(foodCount) : (team.foodCount || team.food_count || 0);
+    if (isNonVit && finalHasFood && finalFoodCount > 0) {
+      const targetFoodCount = Math.min(finalFoodCount, participantsToInsert.length);
+      const activeFoodCount = participantsToInsert.filter(p => p.wants_food).length;
+      if (activeFoodCount < targetFoodCount) {
+        let needed = targetFoodCount - activeFoodCount;
+        for (const p of participantsToInsert) {
+          if (needed <= 0) break;
+          if (!p.wants_food) {
+            p.wants_food = true;
+            needed--;
+          }
+        }
+      }
+    }
 
     await supabase.from('all_participants').insert(participantsToInsert);
     await supabase.from(targetTable).update({ member_count: members.length }).eq('id', team.id);
