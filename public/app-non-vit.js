@@ -1122,39 +1122,18 @@ async function handleConfirmAndPay() {
 }
 
 // ==========================================
-// STEP 4: DYNAMIC UPI QR CODE
+// STEP 4: STANDARD UPI QR CODE (Static QR - User inputs amount manually)
 // ==========================================
 async function loadPaymentQrCode() {
   const qrImg = document.getElementById('upi-qr-image');
   const qrLoading = document.getElementById('qr-loading');
-  const teamName = state.teamDraft.teamName;
-  const regId = state.registeredTeam?.registrationId || '';
-  const totalAmount = state.teamDraft.totalFee || 250;
 
-  if (qrLoading) qrLoading.style.display = 'block';
-
-  try {
-    const query = new URLSearchParams({
-      amount: String(totalAmount),
-      teamName: `${teamName} ${regId}`.trim()
-    });
-
-    const res = await fetch(`/api/upi-qr?${query.toString()}`);
-    const data = await res.json();
-
-    if (data.success && data.qrDataUrl && qrImg) {
-      qrImg.src = data.qrDataUrl;
-      qrImg.style.display = 'block';
-    }
-  } catch (err) {
-    console.warn('Dynamic QR fetch failed, using static fallback:', err);
-    if (qrImg) {
-      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`upi://pay?pa=metaversevitb@indianbk&pn=Metaversity%20Club&am=${totalAmount}&cu=INR`)}`;
-      qrImg.style.display = 'block';
-    }
-  } finally {
-    if (qrLoading) qrLoading.style.display = 'none';
+  const qrSrc = state.hackathonConfig?.upiDetails?.qrCodeDataUrl || '/upi_qr.png';
+  if (qrImg) {
+    qrImg.src = qrSrc;
+    qrImg.style.display = 'block';
   }
+  if (qrLoading) qrLoading.style.display = 'none';
 }
 
 // ==========================================
