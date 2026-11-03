@@ -40,8 +40,8 @@ const state = {
     teamName: '',
     teamType: 'NON_VIT',
     referral: '',
-    track: 'AI & Intelligent Systems',
-    projectTitle: '',
+    track: 'Open Innovation',
+    projectTitle: 'Open Innovation',
     hasFood: false,
     foodCount: 0,
     foodAmount: 0,
@@ -619,8 +619,8 @@ async function handleVerifyOtp() {
 function handleStep1Next() {
   const teamName = document.getElementById('team-name')?.value.trim();
   const referral = document.getElementById('referral')?.value.trim() || '';
-  const track = document.getElementById('team-track')?.value;
-  const projectTitle = document.getElementById('project-title')?.value.trim();
+  const track = document.getElementById('team-track')?.value || 'Open Innovation';
+  const projectTitle = document.getElementById('project-title')?.value.trim() || 'Open Innovation';
 
   const leaderName = document.getElementById('leader-name')?.value.trim();
   const leaderCollege = document.getElementById('leader-college')?.value.trim();
@@ -633,12 +633,6 @@ function handleStep1Next() {
   if (!teamName || teamName.length < 3) {
     showToast('Please enter a valid Squad / Team Name (min 3 chars).', 'warning');
     document.getElementById('team-name')?.focus();
-    return;
-  }
-
-  if (!projectTitle || projectTitle.length < 3) {
-    showToast('Please provide your Project Title or Idea Scope.', 'warning');
-    document.getElementById('project-title')?.focus();
     return;
   }
 
@@ -979,7 +973,7 @@ function populateReviewStep() {
 
   document.getElementById('review-team-name').textContent = d.teamName;
   document.getElementById('review-team-referral').textContent = d.referral || 'None';
-  document.getElementById('review-team-track').textContent = d.track;
+  document.getElementById('review-team-track').textContent = d.track || 'Open Innovation';
   document.getElementById('review-roster-count').textContent = String(count);
 
   updateCart();
@@ -1283,7 +1277,7 @@ function populateReceipt(team, utr, paymentMethod, amountPaid) {
   // On-screen Receipt
   document.getElementById('receipt-reg-id').textContent = regId;
   document.getElementById('receipt-team-name').textContent = d.teamName;
-  document.getElementById('receipt-track').textContent = d.track;
+  document.getElementById('receipt-track').textContent = d.track || 'Open Innovation';
   document.getElementById('receipt-leader-name').textContent = d.leader.fullName;
   document.getElementById('receipt-member-count').textContent = `${squadSize} Members`;
   document.getElementById('receipt-food-count').textContent = `${foodCount} Passes (${foodCount > 0 ? 'Day 1 Dinner' : 'No Food'})`;
@@ -1293,7 +1287,7 @@ function populateReceipt(team, utr, paymentMethod, amountPaid) {
   // Printable Pass
   document.getElementById('print-reg-id').textContent = regId;
   document.getElementById('print-team-name').textContent = d.teamName;
-  document.getElementById('print-track').textContent = d.track;
+  document.getElementById('print-track').textContent = d.track || 'Open Innovation';
   document.getElementById('print-leader-name').textContent = d.leader.fullName;
   document.getElementById('print-squad-size').textContent = `${squadSize} Members`;
   document.getElementById('print-food-passes').textContent = `${foodCount} Passes`;
@@ -1389,9 +1383,9 @@ function saveSessionState() {
   const refEl = document.getElementById('referral');
   if (refEl) state.teamDraft.referral = refEl.value.trim();
   const trackEl = document.getElementById('team-track');
-  if (trackEl) state.teamDraft.track = trackEl.value;
+  state.teamDraft.track = trackEl ? trackEl.value : (state.teamDraft.track || 'Open Innovation');
   const projEl = document.getElementById('project-title');
-  if (projEl) state.teamDraft.projectTitle = projEl.value.trim();
+  state.teamDraft.projectTitle = projEl ? projEl.value.trim() : (state.teamDraft.projectTitle || 'Open Innovation');
 
   const leadNameEl = document.getElementById('leader-name');
   if (leadNameEl) state.teamDraft.leader.fullName = leadNameEl.value.trim();

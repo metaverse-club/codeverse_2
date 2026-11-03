@@ -29,7 +29,7 @@
   <div class="live-ticker-banner" aria-label="Hackathon Updates Ticker">
     <div class="ticker-scroll">
       <div class="ticker-content">
-        <span class="ticker-badge"><span class="pulse-dot"></span> NON-VIT REGISTRATION</span>
+        <span class="ticker-badge"><span class="pulse-dot"></span> REG DEADLINE: 20 NOV 2026</span>
         <span class="ticker-sep">•</span>
         <span class="ticker-text">SQUAD SIZE: <strong>2–5 MEMBERS</strong></span>
         <span class="ticker-sep">•</span>
@@ -42,7 +42,7 @@
         <span class="ticker-sep">•</span>
       </div>
       <div class="ticker-content" aria-hidden="true">
-        <span class="ticker-badge"><span class="pulse-dot"></span> NON-VIT REGISTRATION</span>
+        <span class="ticker-badge"><span class="pulse-dot"></span> REG DEADLINE: 20 NOV 2026</span>
         <span class="ticker-sep">•</span>
         <span class="ticker-text">SQUAD SIZE: <strong>2–5 MEMBERS</strong></span>
         <span class="ticker-sep">•</span>
@@ -268,12 +268,34 @@
       <section class="wizard-step active" id="step-1">
         <div class="step-header">
           <div class="step-badge">Step 1 of 5</div>
-          <h2 class="step-title">Squad Profile & Team Leader Details</h2>
+          <h2 class="step-title">Squad Profile &amp; Team Leader Details</h2>
           <p class="step-desc">Enter your squad details and project focus. As external participants, your squad gets
-            direct entry to Round 2!</p>
+            direct entry to Round 2 without shortlisting! Teams unable to travel to campus may request an online evaluation arrangement with the organizing team.</p>
         </div>
 
         <form id="form-step-1" novalidate>
+          <!-- Instructions for External Teams Alert Box -->
+          <div class="info-alert"
+            style="margin-bottom: 24px; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(129, 140, 248, 0.35); border-radius: 8px; padding: 16px 20px; color: #c7d2fe;">
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+              <span style="font-size: 1.4rem; line-height: 1;">🌐</span>
+              <div style="flex: 1;">
+                <strong style="color: #ffffff; font-size: 1.02rem; display: block; margin-bottom: 8px; text-decoration: underline; text-underline-offset: 4px;">
+                  For External Teams
+                </strong>
+                <ul style="margin: 0; padding-left: 18px; font-size: 0.88rem; line-height: 1.65; color: #e0e7ff;">
+                  <li>Teams from institutions outside VIT Bhopal University are welcome to participate.</li>
+                  <li>External teams that are unable or do not wish to travel to the campus may request an online evaluation arrangement. This arrangement will be coordinated by the organising team.</li>
+                  <li>Food will be provided during the event.</li>
+                  <li>On-campus accommodation/facility access window: <strong>10:00 a.m. on 28 November to 4:00 p.m. on 29 November 2026</strong>.</li>
+                  <li>A designated space for sleeping and resting will be provided, with mattresses available.</li>
+                  <li>Washrooms and other sanitary facilities will be accessible.</li>
+                  <li>Campus facilities include vending machines, food courts and the Dr. Morepen Health Centre.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
           <div class="form-section-title">
             <span class="section-icon">🛡️</span> Squad Profile
           </div>
@@ -298,27 +320,17 @@
               partner.</span>
           </div>
 
-          <div class="form-grid-2">
-            <div class="form-group">
-              <label for="team-track" class="form-label">
-                Innovation Track <span class="required">*</span>
-              </label>
-              <select id="team-track" class="form-input form-select" required>
-                <option value="AI & Intelligent Systems">🤖 AI & Intelligent Systems</option>
-                <option value="Web3 & Decentralized Technologies">⛓️ Web3 & Decentralized Technologies</option>
-                <option value="Fintech & Smart Commerce">💳 Fintech & Smart Commerce</option>
-                <option value="Healthcare & MedTech">🩺 Healthcare & MedTech</option>
-                <option value="Smart Automation & IoT">⚡ Smart Automation & IoT</option>
-                <option value="Open Innovation & Social Impact">🚀 Open Innovation & Social Impact</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="project-title" class="form-label">
-                Project Title / Idea Scope <span class="required">*</span>
-              </label>
-              <input type="text" id="project-title" class="form-input"
-                placeholder="e.g. AI-driven Decentralized Identity" required>
+          <!-- Open Innovation Theme & Problem Statement Notice -->
+          <div class="info-alert"
+            style="margin-bottom: 24px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 14px 18px; color: #93c5fd;">
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+              <span style="font-size: 1.3rem; line-height: 1;">💡</span>
+              <div>
+                <strong style="color: #60a5fa; font-size: 0.95rem;">Theme: Open Innovation</strong>
+                <p style="margin: 4px 0 0 0; font-size: 0.88rem; color: #bfdbfe; line-height: 1.5;">
+                  <strong>No problem statement will be provided by us.</strong> Your squad can choose and define your own problem statement. Problem statement selection and the live coding challenge will take place during <strong>Round 1 on 28th November (Daytime)</strong>.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -576,8 +588,8 @@
               <div class="badge-track badge-non-vit" style="display: inline-block;">🌐 Non-VIT</div>
             </div>
             <div class="text-right">
-              <span class="review-label">Track Selection</span>
-              <div class="badge-track" id="review-team-track">-</div>
+              <span class="review-label">Theme</span>
+              <div class="badge-track" id="review-team-track">Open Innovation</div>
             </div>
           </div>
 

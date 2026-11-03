@@ -27,7 +27,7 @@ const state = {
   registeredTeam: null,
   teamDraft: {
     teamName: '',
-    track: 'To be decided (Post-Vibecoding)',
+    track: 'Open Innovation',
     projectTitle: '',
     referral: '',
     leader: {
@@ -955,7 +955,7 @@ function handleStep1Next() {
   const teamName = document.getElementById('team-name').value.trim();
   const trackEl = document.getElementById('team-track');
   const projectTitleEl = document.getElementById('project-title');
-  const track = trackEl ? trackEl.value : 'To be decided (Post-Vibecoding)';
+  const track = trackEl ? trackEl.value : 'Open Innovation';
   const projectTitle = projectTitleEl ? projectTitleEl.value.trim() : '';
   const referralEl = document.getElementById('referral');
   const referral = referralEl ? referralEl.value.trim() : '';
@@ -1575,7 +1575,7 @@ function populateReviewStep() {
   if (referralEl) referralEl.textContent = state.teamDraft.referral || 'None';
 
   const trackEl = document.getElementById('review-team-track');
-  if (trackEl) trackEl.textContent = state.teamDraft.track || 'To be selected post-Vibecoding round';
+  if (trackEl) trackEl.textContent = state.teamDraft.track || 'Open Innovation';
 
   const totalMembers = 1 + state.teamDraft.members.length;
   const rosterCountEl = document.getElementById('review-roster-count');
@@ -2304,7 +2304,7 @@ async function handleResumeRegistration(identifier) {
 
     // Populate team draft
     state.teamDraft.teamName = team.teamName;
-    state.teamDraft.track = team.track || 'To be decided (Post-Vibecoding)';
+    state.teamDraft.track = team.track || 'Open Innovation';
     state.teamDraft.projectTitle = team.projectTitle || '';
     state.teamDraft.referral = team.referral || '';
 
