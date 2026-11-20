@@ -150,82 +150,86 @@ async function sendStatusEmail(toEmailOrOptions, teamNameParam, statusParam, rea
   registrationId = (registrationId || '').toString().trim();
   teamName = (teamName || 'Team').toString().trim();
 
-  let statusColor = status === 'Verified' ? '#10b981' : '#ef4444';
-  let statusMessage = status === 'Verified' 
-    ? "Congratulations! Your team's registration has been successfully verified. You are now officially enrolled in CodeVerse 2.0."
-    : "Unfortunately, your team's registration has been rejected.";
+  const isVerified = status === 'Verified';
+  const logoUrl = 'https://meusgghusvczisotyzoc.supabase.co/storage/v1/object/public/receipts/codeverse_logo.png';
+  const waLink = 'https://chat.whatsapp.com/EEqc2L4goWxAVMKDfLyXFL?s=cl&p=a&iam=2';
 
-  let reasonHtml = '';
-  if (status === 'Rejected' && reason) {
-    reasonHtml = `
-      <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 6px;">
-        <strong style="color: #991b1b;">Reason for Rejection:</strong><br>
-        <span style="color: #b91c1c; margin-top: 4px; display: inline-block;">${reason}</span>
+  const statusBg = isVerified ? '#ecfdf5' : '#fef2f2';
+  const statusBorder = isVerified ? '#a7f3d0' : '#fca5a5';
+  const statusColor = isVerified ? '#059669' : '#dc2626';
+
+  let statusBadgeHtml = `
+    <div style="background-color: ${statusBg}; border: 2px solid ${statusBorder}; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+      <div style="font-size: 12px; color: ${statusColor}; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;">Registration Status</div>
+      <div style="font-size: 28px; font-weight: 800; color: ${statusColor}; margin: 6px 0; letter-spacing: 1.5px;">${status.toUpperCase()}</div>
+      ${registrationId ? `
+      <div style="font-family: 'Courier New', Courier, monospace; font-size: 18px; font-weight: bold; color: #3730a3; background-color: #e0e7ff; padding: 7px 16px; border-radius: 6px; display: inline-block; margin-top: 6px; letter-spacing: 1px;">
+        ${registrationId}
+      </div>` : ''}
+    </div>
+  `;
+
+  let actionCardHtml = '';
+  if (isVerified) {
+    actionCardHtml = `
+      <div style="background-color: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
+        <h4 style="margin: 0 0 6px 0; color: #166534; font-size: 15px; font-weight: 700;">📢 Official Participant WhatsApp Community</h4>
+        <p style="font-size: 13.5px; color: #15803d; margin: 0 0 14px 0; line-height: 1.4;">
+          Join the official WhatsApp group for important announcements, schedule updates, check-in instructions, and food coupons:
+        </p>
+        <a href="${waLink}" target="_blank" style="display: inline-block; background-color: #25D366; color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 14.5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          👉 Join WhatsApp Group
+        </a>
       </div>
-      <p style="color: #475569; font-size: 14px; line-height: 1.5;">If you believe this is a mistake or if you need to provide updated information (such as a corrected payment receipt or UTR number), you can update your registration on the portal using your Registration Number (<strong>${registrationId || teamName}</strong>) before the registration deadline.</p>
+      <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin: 16px 0;">
+        Please save this confirmation email and keep your Registration Number (<strong>${registrationId || teamName}</strong>) handy for venue gate entry, badge verification, and project submission at VIT Bhopal.
+      </p>
     `;
-  }
-
-  let verifiedInfoHtml = '';
-  if (status === 'Verified') {
-    verifiedInfoHtml = `
+  } else if (reason) {
+    actionCardHtml = `
+      <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin: 20px 0; border-radius: 6px;">
+        <strong style="color: #991b1b; font-size: 14px;">Reason for Rejection:</strong><br>
+        <span style="color: #b91c1c; margin-top: 4px; display: inline-block; font-size: 14px;">${reason}</span>
+      </div>
       <p style="color: #475569; font-size: 14px; line-height: 1.5;">
-        Please save this email and keep your Registration Number (<strong>${registrationId || teamName}</strong>) handy for event check-in, badge verification, and project submission.
+        If you need to provide updated information (such as a corrected payment receipt or UTR number), you can update your registration on the portal using your Registration Number (<strong>${registrationId || teamName}</strong>) before the registration deadline.
       </p>
     `;
   }
 
-  const regBadgeHtml = registrationId ? `
-    <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed #cbd5e1;">
-      <span style="font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Registration Number</span>
-      <div style="font-family: 'Courier New', Courier, monospace; font-size: 18px; font-weight: bold; color: #4338ca; letter-spacing: 1px; margin-top: 4px;">
-        ${registrationId}
-      </div>
-    </div>
-  ` : '';
-
-  const detailsTableHtml = `
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 22px 0; font-size: 14px;">
-      <table style="width: 100%; border-collapse: collapse;">
-        ${registrationId ? `
-        <tr>
-          <td style="padding: 6px 0; color: #64748b; width: 44%;">Registration Number:</td>
-          <td style="padding: 6px 0; font-weight: bold; font-family: 'Courier New', Courier, monospace; font-size: 15px; color: #4338ca;">${registrationId}</td>
-        </tr>` : ''}
-        <tr>
-          <td style="padding: 6px 0; color: #64748b; width: 44%;">Team Name:</td>
-          <td style="padding: 6px 0; font-weight: bold; color: #0f172a;">${teamName}</td>
-        </tr>
-        <tr>
-          <td style="padding: 6px 0; color: #64748b; width: 44%;">Current Status:</td>
-          <td style="padding: 6px 0; font-weight: bold; color: ${statusColor}; text-transform: uppercase;">${status}</td>
-        </tr>
-      </table>
-    </div>
-  `;
-
   const subject = `CodeVerse 2.0 Registration Status - ${status}${registrationId ? ` (${registrationId})` : ''}`;
   const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px; background-color: #ffffff; color: #1e293b;">
-      <h2 style="color: #6366f1; margin-top: 0;">CodeVerse 2.0</h2>
-      <p>Hello Team Leader (<strong>${teamName}</strong>),</p>
-      <p>We are writing to update you on your hackathon registration status.</p>
-      
-      <div style="text-align: center; margin: 25px 0; padding: 18px; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
-        <h3 style="margin: 0; color: #374151; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Current Status:</h3>
-        <h2 style="margin: 8px 0 0 0; color: ${statusColor}; text-transform: uppercase; letter-spacing: 2px; font-size: 26px;">${status}</h2>
-        ${regBadgeHtml}
+    <div style="background-color: #f1f5f9; margin: 0; padding: 30px 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+      <div style="max-width: 580px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.07); overflow: hidden;">
+        
+        <!-- Tech Indigo Header Banner -->
+        <div style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%); padding: 32px 24px; text-align: center; color: #ffffff;">
+          <img src="${logoUrl}" alt="CodeVerse 2.0" style="width: 80px; height: 80px; border-radius: 16px; border: 3px solid rgba(255,255,255,0.3); display: block; margin: 0 auto;">
+          <h1 style="margin: 14px 0 4px 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #ffffff;">CodeVerse 2.0</h1>
+          <p style="margin: 0; font-size: 13px; color: #c7d2fe; letter-spacing: 1.5px; text-transform: uppercase;">Central India's Premier Hackathon</p>
+        </div>
+
+        <!-- Body Content -->
+        <div style="padding: 28px 30px; color: #1e293b;">
+          <h3 style="margin: 0 0 8px 0; color: #0f172a; font-size: 18px;">
+            ${isVerified ? `Welcome to CodeVerse, ${teamName}! 🚀` : `Hello Team Leader (${teamName}),`}
+          </h3>
+          <p style="color: #475569; font-size: 14.5px; line-height: 1.5; margin: 0;">
+            ${isVerified 
+              ? "Your squad is locked in and officially confirmed! Here is your official registration verification badge:" 
+              : "We are writing to update you regarding your team's hackathon registration status."}
+          </p>
+
+          ${statusBadgeHtml}
+          ${actionCardHtml}
+
+          <div style="border-top: 1px solid #f1f5f9; padding-top: 18px; margin-top: 24px; font-size: 13px; color: #475569; line-height: 1.5;">
+            Warm regards,<br>
+            <strong style="color: #0f172a; font-size: 14px;">Metaversity Club, VIT Bhopal University</strong>
+          </div>
+        </div>
+
       </div>
-
-      ${detailsTableHtml}
-
-      <p style="font-size: 15px; line-height: 1.5;">${statusMessage}</p>
-      
-      ${verifiedInfoHtml}
-      ${reasonHtml}
-
-      <br>
-      <p style="color: #334155;">Best regards,<br><strong>Metaversity Club, VIT Bhopal</strong></p>
     </div>
   `;
 
